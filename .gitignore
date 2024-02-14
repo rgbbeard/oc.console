@@ -1,5 +1,5 @@
-/.idea/
-/ochost
-/.sesshstr
-/currenv
-/__pycache__/
+.idea/
+ochost
+.sesshstr
+currenv
+__pycache__/
