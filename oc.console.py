@@ -2,36 +2,53 @@
 
 from console import Console
 from os import system
-import curses
+from prompt_toolkit import PromptSession
+from pygame.locals import *
+from pygame import event
+import pygame
 
 console = Console()
 
+# without this the keyboard won't be captured
+pygame.init()
+
+history = console.get_history()
+hcursor: int = len(history) - 1
+
 
 # WIP
-# TODO: make this function work properly
-def get_input(prompt):
-    stdscr = curses.initscr()
-    curses.noecho()
-    stdscr.keypad(True)
-    stdscr.addstr(prompt)
-    input_str = ""
+# TODO: make the history be shown
+def prompt(ppt):
+    global history, hcursor
+
+    session = PromptSession()
+
     while True:
-        key = stdscr.getch()
-        if key == curses.KEY_ENTER or key == 10:
-            break
-        elif key == curses.KEY_BACKSPACE or key == 127:
-            input_str = input_str[:-1]
-        else:
-            input_str += chr(key)
-        stdscr.addstr(prompt + input_str + " " * (curses.COLS - len(prompt) - len(input_str) - 1))
-        stdscr.refresh()
-    curses.endwin()
-    return input_str
+        for e in event.get():
+            if e.type == KEYDOWN:
+                if e.key == K_UP:
+                    hcursor -= 1
+
+                    if hcursor < 0:
+                        hcursor = 0
+
+                    ppt = history[hcursor] if hcursor < len(history) else ''
+                elif e.key == K_DOWN:
+                    hcursor += 1
+
+                    if hcursor >= len(history):
+                        hcursor = len(history) - 1
+
+                    ppt = history[hcursor] if hcursor < len(history) else ''
+                elif e.key == K_RETURN:
+                    return session.prompt(ppt)
+
+        return session.prompt(ppt)
 
 
+# this is the core of the program
 while True:
-    # cmd = input("oc.console $>")
-    cmd = get_input("oc.console $>")
+    cmd = prompt("oc.console $>")
     cmd = cmd.strip()
     argsvalid = False
     args = []
@@ -43,6 +60,9 @@ while True:
     try:
         # save every entry
         console.save_history(cmd, args, argsvalid)
+
+        # reload history
+        history = console.get_history()
 
         # list all the available PODS
         if cmd == "find":

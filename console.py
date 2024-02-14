@@ -31,6 +31,10 @@ class Console:
 
             history.write(row)
 
+    def get_history(self):
+        with open("./.sesshstr", "r") as history:
+            return history.readlines()
+
     def get_help_for(self, cmd: str = ""):
         if not (not cmd) and self.__help_for.get(cmd):
             PrintC.printc_bold(f"Manual for {cmd}:", "YELLOW")
