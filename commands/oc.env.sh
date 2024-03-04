@@ -9,8 +9,8 @@ if [[ -n $1 ]]; then
 		currenv="PRODUCTION"
 	fi
 
-  # save the current working environment
-	echo "$currenv" | tee currenv
+  	# save the current working environment
+	echo "$currenv" >> "../currenv"
 else
 	currenv=$(cat "../currenv")
 fi
