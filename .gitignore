@@ -2,4 +2,5 @@
 ochost
 .sesshstr
 currenv
+currpod
 __pycache__/
