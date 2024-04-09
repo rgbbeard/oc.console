@@ -1,7 +1,8 @@
 #!/bin/bash
 
 if [[ -z "$1" ]]; then
-	eval "oc projects"
+	eval "./oc.env.sh"
+	oc projects
 	exit
 fi
 

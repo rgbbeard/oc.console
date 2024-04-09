@@ -3,8 +3,11 @@
 from console import Console
 from os import system
 from prompt_toolkit import PromptSession
+from os import environ
+
+environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
 from pygame.locals import *
-from pygame import event
 import pygame
 
 console = Console()
@@ -24,24 +27,26 @@ def prompt(ppt):
     session = PromptSession()
 
     while True:
-        for e in event.get():
-            if e.type == KEYDOWN:
-                if e.key == K_UP:
+        for e in pygame.event.get():
+            if e.type == pygame.KEYDOWN:
+                if e.key == pygame.K_UP:
                     hcursor -= 1
 
-                    if hcursor < 0:
+                    if hcursor <= 0:
                         hcursor = 0
 
-                    ppt = history[hcursor] if hcursor < len(history) else ''
-                elif e.key == K_DOWN:
+                    ppt = history[hcursor]
+                    print(ppt)
+                elif e.key == pygame.K_DOWN:
                     hcursor += 1
 
-                    if hcursor >= len(history):
+                    if hcursor >= len(history) - 1:
                         hcursor = len(history) - 1
 
-                    ppt = history[hcursor] if hcursor < len(history) else ''
-                elif e.key == K_RETURN:
-                    return session.prompt(ppt)
+                    ppt = history[hcursor]
+                    print(ppt)
+                elif e.key == pygame.K_RETURN:
+                    break
 
         return session.prompt(ppt)
 
@@ -73,8 +78,13 @@ while True:
             console.get_pods_list(args[1])
 
         # enter bash for the requested POD
-        elif argsvalid and args[0] == "enter":
-            console.spawn_bash(args[1])
+        elif args[0] == "enter":
+            try:
+                pod_name = args[1]
+            except IndexError as ie:
+                pod_name = ""
+
+            console.spawn_bash(pod_name)
 
         # upload a file to the specified path inside a POD
         elif argsvalid and args[0] == "upload":

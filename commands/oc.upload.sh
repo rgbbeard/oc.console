@@ -1,39 +1,65 @@
-# oc cp ~{path/to/file} pod_name(via RSH):{path/to/destination}
-# TODO: complete this feature
+#!/bin/bash
 
-pod=''
+pod=$(cat "../currpod")
 from=''
 to=''
 
-# get parameters
-while [ $# -gt 0 ]
-do
-     case "$1" in
-          --pod)
-               pod="$2"
-          shift;;
-     esac
-     case "$3" in
-          --from)
-               from="$4"
-          shift;;
-     esac
-     case "$5" in
-          --to)
-               to="$6"
-          shift;;
-     esac
+while [[ $# -gt 0 ]]; do
+     if [[ "$1" == --* ]]; then
+          param="${1#--}"
+          value="$2"
+
+          case "$param" in
+               pod)
+                    if [ "$value" == "last-used" ] then
+                         echo -e "No POD specified, using the last-entered POD\n"
+                    else
+                         pod="$value"
+                    fi
+                    ;;
+               from)
+                    from="$value"
+                    ;;
+               to)
+                    to="$value"
+                    ;;
+               *)
+                    echo "Unknown parameter: $param"
+                    ;;
+          esac
+
+          shift 2
+     else
+          echo "Invalid parameter format: $1"
+          shift
+     fi
 done
 
 if [[ -z "$pod" ]]; then
-     echo "Empty pod name"
+     echo "No POD available for upload"
      exit
+else
+     read -p "This POD will be used to upload your file \"$pod\", continue?(Yes/No)" answer
+
+     shopt -s nocasematch
+
+     if [[ "$answer" == "no" || "$answer" == "n" ]]; then
+          echo -e "Exiting..\n"
+     fi
 fi
+
+
 if [[ -z "$from" ]]; then
      echo "Empty 'from' parameter"
      exit
 fi
+
 if [[ -z "$to" ]]; then
      echo "Empty 'to' parameter"
      exit
 fi
+
+# TODO: add local file existence
+
+# upload the file
+oc cp $from $pod:$to
