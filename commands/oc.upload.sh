@@ -11,7 +11,7 @@ while [[ $# -gt 0 ]]; do
 
           case "$param" in
                pod)
-                    if [ "$value" == "last-used" ] then
+                    if [ "$value" == "last-used" ]; then
                          echo -e "No POD specified, using the last-entered POD\n"
                     else
                          pod="$value"
@@ -45,6 +45,7 @@ else
 
      if [[ "$answer" == "no" || "$answer" == "n" ]]; then
           echo -e "Exiting..\n"
+          exit
      fi
 fi
 
@@ -62,4 +63,4 @@ fi
 # TODO: add local file existence
 
 # upload the file
-oc cp $from $pod:$to
+oc cp "$from" $pod:"$to"
