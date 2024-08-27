@@ -37,10 +37,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$pod" ]]; then
-     echo "No POD available for upload"
+     echo "No POD available for download"
      exit
 else
-     read -p "This POD will be used to upload your file \"$pod\", continue?(Yes/No)" answer
+     read -p "This POD will be used to download your file \"$pod\", continue?(Yes/No)" answer
 
      shopt -s nocasematch
 
@@ -63,5 +63,5 @@ fi
 
 # TODO: add local file existence
 
-# upload the file
-oc cp "$from" $pod:"$to"
+# download the file
+oc rsync $pod:"$from" "$to"

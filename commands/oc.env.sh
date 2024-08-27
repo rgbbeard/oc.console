@@ -1,4 +1,5 @@
 #!/bin/bash
+base="$(dirname $(readlink -f $0))"
 
 currenv="DEVELOPMENT"
 
@@ -10,9 +11,9 @@ if [[ -n $1 ]]; then
 	fi
 
   	# save the current working environment
-	echo "$currenv" | tee "../currenv"
+	echo "$currenv" | tee "$base/../.currenv"
 else
-	currenv=$(cat "../currenv")
+	currenv=$(cat "$base/../.currenv")
 fi
 
 echo -e "Currently using environment: $currenv\n"

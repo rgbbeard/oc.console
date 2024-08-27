@@ -2,56 +2,30 @@
 
 from console import Console
 from os import system
-from prompt_toolkit import PromptSession
-from os import environ
-
-environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
-
-from pygame.locals import *
-import pygame
+from prompt_toolkit import PromptSession, prompt
+from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
 console = Console()
-
-# without this the keyboard won't be captured
-pygame.init()
-
-history = console.get_history()
-hcursor: int = len(history) - 1
+autocompletion = WordCompleter(console.get_commands())
+history = FileHistory('../.sesshstr')
 
 
-# WIP
-# TODO: make the history be shown
 def prompt(ppt):
-    global history, hcursor
+    global autocompletion, history
 
-    session = PromptSession()
+    session = PromptSession(completer=autocompletion, history=history)
 
-    while True:
-        for e in pygame.event.get():
-            if e.type == pygame.KEYDOWN:
-                if e.key == pygame.K_UP:
-                    hcursor -= 1
-
-                    if hcursor <= 0:
-                        hcursor = 0
-
-                    ppt = history[hcursor]
-                    print(ppt)
-                elif e.key == pygame.K_DOWN:
-                    hcursor += 1
-
-                    if hcursor >= len(history) - 1:
-                        hcursor = len(history) - 1
-
-                    ppt = history[hcursor]
-                    print(ppt)
-                elif e.key == pygame.K_RETURN:
-                    break
-
-        return session.prompt(ppt)
+    try:
+        return session.prompt(ppt, auto_suggest=AutoSuggestFromHistory())
+    except KeyboardInterrupt:
+        exit()
+    except EOFError:
+        exit()
 
 
-# this is the core of the program
 while True:
     cmd = prompt("oc.console $>")
     cmd = cmd.strip()
@@ -65,9 +39,6 @@ while True:
     try:
         # save every entry
         console.save_history(cmd, args, argsvalid)
-
-        # reload history
-        history = console.get_history()
 
         # list all the available PODS
         if cmd == "find":
@@ -83,17 +54,28 @@ while True:
                 pod_name = args[1]
             except IndexError as ie:
                 pod_name = ""
+                print("An unexpected error has occurred")
+                pass
 
             console.spawn_bash(pod_name)
 
         # upload a file to the specified path inside a POD
         elif argsvalid and args[0] == "upload":
-            # TODO: fix the bash script to enable this feature
-            print("This feature is not available yet.")
+            #console.do_upload(pod_name=args[2], args[4], args[6])
+            pass
+
+        # download a file from the specified path inside a POD
+        elif argsvalid and args[0] == "download":
+            #console.do_download(pod_name=args[1], args[2], args[3])
+            pass
 
         # do i need to explain this?
         elif cmd == "login":
             console.do_login()
+
+        # set working environment
+        elif argsvalid and args[0] == "use-env":
+            console.set_env(args[1])
 
         # needed for login
         elif argsvalid and args[0] == "set-credentials-path":

@@ -1,7 +1,8 @@
 #!/bin/bash
+base="$(dirname $(readlink -f $0))"
 
 if [[ -z "$1" ]]; then
-	eval "./oc.env.sh"
+	source "$base/oc.env.sh"
 	oc projects
 	exit
 fi
@@ -13,7 +14,7 @@ dev=$(echo "$tmp" | grep -E ".*-dev\"")
 prod=$(echo "$tmp" | grep -E ".*-prod.*\"")
 
 if [[ -n "$dev" ]]; then
-	eval "./oc.env.sh dev"
+	source "$base/oc.env.sh dev"
 elif [[ -n "$prod" ]]; then
-	eval "./oc.env.sh prod"
+	source "$base/oc.env.sh prod"
 fi

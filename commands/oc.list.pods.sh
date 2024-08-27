@@ -1,6 +1,7 @@
 #!/bin/bash
+base="$(dirname $(readlink -f $0))"
 
-eval "./oc.env.sh"
+source "$base/oc.env.sh"
 command="oc get pod"
 
 if [ -z "$1" ]

@@ -1,6 +1,6 @@
 .idea/
-ochost
+.ochost
 .sesshstr
-currenv
-currpod
+.currenv
+.currpod
 __pycache__/
