@@ -55,6 +55,10 @@ class Console:
             Usage:
                 use-env prod (or dev)
         """,
+        "currenv": "Show the current working environment",
+        "env?": "Alias of currenv",
+        "env": "Alias of currenv",
+        ""
         "login": """Log in to the OpenShift Client using your credentials. 
             An .ochost file with the host address is required.
         """,
@@ -126,16 +130,13 @@ class Console:
             self.__create_link(credentials_path)
 
     def set_env(self, environment: str = "dev"):
-        process = Popen([f"{CWD}/commands/oc.env.sh", f"{environment}"], stdin=PIPE, stderr=PIPE, stdout=PIPE)
-        output, error = process.communicate()
+        run([f"{CWD}/commands/oc.switch.sh", f"{environment}"])
 
-        lines = output.decode().splitlines()
-
-        for line in lines:
-            print(line)
+    def get_env(self):
+        run([f"{CWD}/commands/oc.env.sh"])
 
     def spawn_bash(self, pod_name: str = ""):
-        run(["/bin/bash", "-c", f"{CWD}/commands/oc.enter.sh {pod_name}"])
+        run(["/bin/bash", "-c", f"{CWD}/commands/oc.enter.sh", f"{pod_name}"])
 
     def do_login(self):
         try:
@@ -161,4 +162,4 @@ class Console:
         print(pod_name, _from, _to)
 
     def verify_xload_args(self, args: list):
-        pass
+        print(args)

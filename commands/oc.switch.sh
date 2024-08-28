@@ -14,7 +14,7 @@ dev=$(echo "$tmp" | grep -E ".*-dev\"")
 prod=$(echo "$tmp" | grep -E ".*-prod.*\"")
 
 if [[ -n "$dev" ]]; then
-	source "$base/oc.env.sh dev"
+	eval "$base/oc.env.sh dev"
 elif [[ -n "$prod" ]]; then
-	source "$base/oc.env.sh prod"
+	eval "$base/oc.env.sh prod"
 fi

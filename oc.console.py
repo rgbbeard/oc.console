@@ -33,24 +33,26 @@ while True:
 
     if not (not cmd):
         args = cmd.split(" ")
-        argsvalid = len(args) >= 2
+        # the first element is always the command
+        cmd = args.pop(0)
+        argsvalid = len(args) >= 1
 
     try:
         # save every entry
         console.save_history(cmd, args, argsvalid)
 
         # list all the available PODS
-        if cmd == "find" or cmd == "ls":
+        if not argsvalid and (cmd == "find" or cmd == "ls"):
             console.get_pods_list()
 
         # search for a specific POD
-        elif argsvalid and args[0] == "find":
-            console.get_pods_list(args[1])
+        elif argsvalid and cmd == "find":
+            console.get_pods_list(args[0])
 
         # enter bash for the requested POD
-        elif argsvalid and args[0] == "enter":
+        elif argsvalid and cmd == "enter":
             try:
-                pod_name = args[1]
+                pod_name = args[0]
             except IndexError as ie:
                 pod_name = ""
                 print("An unexpected error has occurred")
@@ -59,22 +61,20 @@ while True:
             console.spawn_bash(pod_name)
 
         # upload a file to the specified path inside a POD
-        elif argsvalid and args[0] == "upload":
-            print(args)
-
+        elif argsvalid and cmd == "upload":
             if len(args) == 2:
-                pass
+                console.verify_xload_args(args)
                 #console.do_upload(pod_name=args[2], args[4], args[6])
             pass
 
         # download a file from the specified path inside a POD
-        elif argsvalid and args[0] == "download":
+        elif argsvalid and cmd == "download":
             print(args)
             #console.do_download(pod_name=args[1], args[2], args[3])
             pass
 
         # move a file from a pod to another
-        elif argsvalid and args[0] == "upload-pod2pod":
+        elif argsvalid and cmd == "upload-pod2pod":
             print("Coming soon")
             pass
 
@@ -83,12 +83,15 @@ while True:
             console.do_login()
 
         # set working environment
-        elif argsvalid and args[0] == "use-env":
-            console.set_env(args[1])
+        elif argsvalid and cmd == "use-env":
+            console.set_env(args[0])
+
+        elif cmd == "currenv" or cmd == "env" or cmd == "env?":
+            console.get_env()
 
         # needed for login
-        elif argsvalid and (args[0] == "set-credentials-path" or args[0] == "set-credentials"):
-            console.set_credentials_path(args[1])
+        elif argsvalid and (cmd == "set-credentials-path" or cmd == "set-credentials"):
+            console.set_credentials_path(args[0])
 
         # display a generic help message
         elif cmd == "help":
@@ -96,8 +99,8 @@ while True:
 
         # display the manual for a specific command
         # TODO: add the possibility to get the manual for multiple commands
-        elif argsvalid and args[0] == "help":
-            console.get_help_for(args[1])
+        elif argsvalid and cmd == "help":
+            console.get_help_for(args[0])
 
         # clear the screen, obviously
         elif cmd == "clear" or cmd == "cls":

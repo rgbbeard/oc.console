@@ -11,7 +11,7 @@ if [[ -n $1 ]]; then
 	fi
 
   	# save the current working environment
-	echo "$currenv" | tee "$base/../.currenv"
+	echo "$currenv" > "$base/../.currenv"
 else
 	currenv=$(cat "$base/../.currenv")
 fi

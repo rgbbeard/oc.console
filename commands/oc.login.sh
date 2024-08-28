@@ -18,4 +18,4 @@ fi
 
 # TODO: check security issues for eval
 eval "{ echo \"$username\"; echo \"$password\"; } | oc login $ochost --insecure-skip-tls-verify"
-source "$base/oc.env.sh"
+source "$base/oc.switch.sh"
