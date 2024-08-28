@@ -1,0 +1,13 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Name=OpenShift Client Interactive Console
+Comment=Interactive console for OpenShift Client
+TryExec=/opt/oc.console/start.sh
+Exec=/opt/oc.console/start.sh
+Icon=/opt/oc.console/icon.png
+Terminal=true
+Type=Application
+StartupNotify=true
+Categories=GNOME;GTK;
+NotShowIn=KDE;
+Keywords=Open;Shift;Client;Console;Terminal;

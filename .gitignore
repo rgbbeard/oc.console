@@ -3,4 +3,5 @@
 .sesshstr
 .currenv
 .currpod
+.credentials
 __pycache__/

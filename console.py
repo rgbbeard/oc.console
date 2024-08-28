@@ -2,7 +2,10 @@
 
 from printc import PrintC
 from subprocess import Popen, PIPE, run
-from app_utils import is_file
+from os.path import dirname, isfile, islink
+from os import symlink, unlink
+
+CWD = dirname(__file__)
 
 
 class Console:
@@ -38,7 +41,11 @@ class Console:
             Example:
                 download --pod default --from /path/to/somefile.pdf --to ~/Downloads
         """,
+        "upload-pod2pod": """***Coming soon***
+            Move a file from a POD to another
+        """,
         "find": "Locate a POD.",
+        "ls": "Alias of find",
         "enter": """Access a POD.
             You can specify the POD you want to enter, or if no name is provided, the last accessed POD will be used.
             Usage:
@@ -57,7 +64,8 @@ class Console:
 
             Usage:
                 set-credentials /path/to/file
-        """
+        """,
+        "set-credentials-path": "Alias of set-credentials"
     }
 
     def __init__(self):
@@ -67,7 +75,7 @@ class Console:
         return self.__help_for.keys()
 
     def save_history(self, cmd, args, argsvalid):
-        with open("./.sesshstr", "a") as history:
+        with open(f"{CWD}/.sesshstr", "a") as history:
             row = "\n"
 
             if not argsvalid:
@@ -83,7 +91,7 @@ class Console:
             print(self.__help_for.get(cmd))
 
     def get_pods_list(self, pod_name: str = ""):
-        process = Popen(["./commands/oc.list.pods.sh", pod_name], stdin=PIPE, stderr=PIPE, stdout=PIPE)
+        process = Popen([f"{CWD}/commands/oc.list.pods.sh", pod_name], stdin=PIPE, stderr=PIPE, stdout=PIPE)
         output, error = process.communicate()
 
         lines = output.decode().splitlines()
@@ -95,31 +103,30 @@ class Console:
             PrintC.printc_bold("No POD found.", "RED")
 
     def set_credentials_path(self, credentials_path: str = ""):
-        # Made extra verbose name to prevent this variable from being overwritten
-        env_var_name = "OC_INTERACTIVE_CONSOLE_CREDENTIALS_PATH"
         PrintC.printc_bold("Now checking the path you entered...", "YELLOW")
 
-        if is_file(credentials_path):
-            PrintC.printc_bold("Valid!", "GREEN")
+        if isfile(credentials_path):
+            PrintC.printc_bold("The file you provided is valid!", "GREEN")
+            PrintC.printc("Saving credentials...", "RED")
 
-            with open(credentials_path, "a+") as f:
-                if not (env_var_name in f.read()):
-                    PrintC.printc("Credentials not set, writing file...", "RED")
+            self.__create_link(credentials_path)
 
-                    f.write(f"export {env_var_name}=\"{credentials_path}\"")
+            PrintC.printc_bold("Done", "GREEN")
 
-                    PrintC.printc("Variable written, now refreshing the configuration file...", "GREEN")
+            self.do_login()
+        else:            
+            PrintC.printc_bold("The provided file is not valid", "RED")
 
-                    # Trying to refresh the local configuration
-                    Popen(["source ~/.bashsrc"], stdin=PIPE, stderr=PIPE, stdout=PIPE)
-
-                    PrintC.printc(f"The path you entered: {credentials_path}", "YELLOW")
-                    PrintC.printc_bold("All done! You're good to go.", "GREEN")
-                else:
-                    PrintC.printc_bold("Credentials' file is already set in ~/.bashrc.", "RED")
+    def __create_link(self, credentials_path: str = ""):
+        try:
+            symlink(credentials_path, f"{CWD}/.credentials")
+        except FileExistsError:
+            PrintC.printc_bold("Configuration file already exists", "YELLOW")
+            unlink(f"{CWD}/.credentials")
+            self.__create_link(credentials_path)
 
     def set_env(self, environment: str = "dev"):
-        process = Popen(["./commands/oc.env.sh", f"{environment}"], stdin=PIPE, stderr=PIPE, stdout=PIPE)
+        process = Popen([f"{CWD}/commands/oc.env.sh", f"{environment}"], stdin=PIPE, stderr=PIPE, stdout=PIPE)
         output, error = process.communicate()
 
         lines = output.decode().splitlines()
@@ -128,19 +135,30 @@ class Console:
             print(line)
 
     def spawn_bash(self, pod_name: str = ""):
-        run(['/bin/bash', '-c', f'./commands/oc.enter.sh {pod_name}'])
+        run(["/bin/bash", "-c", f"{CWD}/commands/oc.enter.sh {pod_name}"])
 
     def do_login(self):
-        process = Popen("./commands/oc.login.sh", stdin=PIPE, stderr=PIPE, stdout=PIPE)
-        output, error = process.communicate()
+        try:
+            with open(f"{CWD}/.credentials", "r") as credentials:
+                username, password = credentials.readlines()
 
-        lines = output.decode().splitlines()
+            process = Popen([f"{CWD}/commands/oc.login.sh", username, password], stdin=PIPE, stderr=PIPE, stdout=PIPE)
+            output, error = process.communicate()
 
-        for line in lines:
-            print(line)
+            lines = output.decode().splitlines()
 
+            for line in lines:
+                print(line)
+        except Exception as e:
+            print("An error occurred while logging in")
+            print(e)
+
+    # TODO: complete these features
     def do_upload(self, _from: str, _to: str, pod_name: str = "default"):
         print(pod_name, _from, _to)
 
     def do_download(self, _from: str, _to: str, pod_name: str = "default"):
         print(pod_name, _from, _to)
+
+    def verify_xload_args(self, args: list):
+        pass

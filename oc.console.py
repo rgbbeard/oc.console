@@ -4,13 +4,12 @@ from console import Console
 from os import system
 from prompt_toolkit import PromptSession, prompt
 from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit.history import FileHistory
-from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.history import FileHistory, InMemoryHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
 console = Console()
 autocompletion = WordCompleter(console.get_commands())
-history = FileHistory('../.sesshstr')
+history = FileHistory('.sesshstr')
 
 
 def prompt(ppt):
@@ -41,7 +40,7 @@ while True:
         console.save_history(cmd, args, argsvalid)
 
         # list all the available PODS
-        if cmd == "find":
+        if cmd == "find" or cmd == "ls":
             console.get_pods_list()
 
         # search for a specific POD
@@ -49,7 +48,7 @@ while True:
             console.get_pods_list(args[1])
 
         # enter bash for the requested POD
-        elif args[0] == "enter":
+        elif argsvalid and args[0] == "enter":
             try:
                 pod_name = args[1]
             except IndexError as ie:
@@ -61,12 +60,22 @@ while True:
 
         # upload a file to the specified path inside a POD
         elif argsvalid and args[0] == "upload":
-            #console.do_upload(pod_name=args[2], args[4], args[6])
+            print(args)
+
+            if len(args) == 2:
+                pass
+                #console.do_upload(pod_name=args[2], args[4], args[6])
             pass
 
         # download a file from the specified path inside a POD
         elif argsvalid and args[0] == "download":
+            print(args)
             #console.do_download(pod_name=args[1], args[2], args[3])
+            pass
+
+        # move a file from a pod to another
+        elif argsvalid and args[0] == "upload-pod2pod":
+            print("Coming soon")
             pass
 
         # do i need to explain this?
@@ -78,7 +87,7 @@ while True:
             console.set_env(args[1])
 
         # needed for login
-        elif argsvalid and args[0] == "set-credentials-path":
+        elif argsvalid and (args[0] == "set-credentials-path" or args[0] == "set-credentials"):
             console.set_credentials_path(args[1])
 
         # display a generic help message
