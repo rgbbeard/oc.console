@@ -23,6 +23,35 @@ class Console:
 
             For more details use: help {COMMAND}
         """,
+        "login": """Log in to the OpenShift Client using your credentials. 
+            An .ochost file with the host address is required.
+        """,
+        "set-credentials": """Save your login credentials.
+            This command requires the path to the file containing the login credentials.
+            The file should contain only the username and password, each on a separate line.
+
+            Usage:
+                set-credentials {PATH}
+        """,
+        "set-credentials-path": "Alias of set-credentials",
+        "find": "Locate a POD.",
+        "ls": "Alias of find",
+        "logs": """Shows the POD logs in real time.
+            Usage:
+                logs {POD} --since {TIME}
+        """,
+        "enter": """Access a POD.
+            You can specify the POD you want to enter, or if no name is provided, the last accessed POD will be used.
+            Usage:
+                enter {POD}
+        """,
+        "use-env": """Switch between work environments.
+            Usage:
+                use-env {ENVIRONMENT}
+        """,
+        "currenv": "Show the current working environment",
+        "env?": "Alias of currenv",
+        "env": "Alias of currenv",
         "upload": """Upload a file to a specified POD.
             Usage:
                 --pod {POD} or default (uses the last accessed POD)
@@ -43,33 +72,7 @@ class Console:
         """,
         "upload-pod2pod": """***Coming soon***
             Move a file from a POD to another
-        """,
-        "find": "Locate a POD.",
-        "ls": "Alias of find",
-        "enter": """Access a POD.
-            You can specify the POD you want to enter, or if no name is provided, the last accessed POD will be used.
-            Usage:
-                enter {POD}
-        """,
-        "use-env": """Switch between work environments (development or production).
-            Usage:
-                use-env prod (or dev)
-        """,
-        "currenv": "Show the current working environment",
-        "env?": "Alias of currenv",
-        "env": "Alias of currenv",
-        ""
-        "login": """Log in to the OpenShift Client using your credentials. 
-            An .ochost file with the host address is required.
-        """,
-        "set-credentials": """Save your login credentials.
-            This command requires the path to the file containing the login credentials.
-            The file should contain only the username and password, each on a separate line.
-
-            Usage:
-                set-credentials /path/to/file
-        """,
-        "set-credentials-path": "Alias of set-credentials"
+        """
     }
 
     def __init__(self):
