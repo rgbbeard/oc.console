@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE, run
 from os.path import dirname, isfile, islink
 from os import symlink, unlink
 
-CWD = dirname(__file__)
+BASE = dirname(__file__)
 
 
 class Console:
@@ -26,6 +26,13 @@ class Console:
         "login": """Log in to the OpenShift Client using your credentials. 
             An .ochost file with the host address is required.
         """,
+        "set-host": """Save the host to login to.
+            Usage:
+                set-host http://host.example
+        """,
+        "currhost": "Show the host that's currently in use.",
+        "host?": "Alias of currhost.",
+        "host": "Alias of currhost.",
         "set-credentials": """Save your login credentials.
             This command requires the path to the file containing the login credentials.
             The file should contain only the username and password, each on a separate line.
@@ -49,9 +56,9 @@ class Console:
             Usage:
                 use-env {ENVIRONMENT}
         """,
-        "currenv": "Show the current working environment",
-        "env?": "Alias of currenv",
-        "env": "Alias of currenv",
+        "currenv": "Show the current working environment.",
+        "env?": "Alias of currenv.",
+        "env": "Alias of currenv.",
         "upload": """Upload a file to a specified POD.
             Usage:
                 --pod {POD} or default (uses the last accessed POD)
@@ -82,7 +89,7 @@ class Console:
         return self.__help_for.keys()
 
     def save_history(self, cmd, args, argsvalid):
-        with open(f"{CWD}/.sesshstr", "a") as history:
+        with open(f"{BASE}/.sesshstr", "a") as history:
             row = "\n"
 
             if not argsvalid:
@@ -98,7 +105,7 @@ class Console:
             print(self.__help_for.get(cmd))
 
     def get_pods_list(self, pod_name: str = ""):
-        process = Popen([f"{CWD}/commands/oc.list.pods.sh", pod_name], stdin=PIPE, stderr=PIPE, stdout=PIPE)
+        process = Popen([f"{BASE}/commands/oc.list.pods.sh", pod_name], stdin=PIPE, stderr=PIPE, stdout=PIPE)
         output, error = process.communicate()
 
         lines = output.decode().splitlines()
@@ -126,33 +133,50 @@ class Console:
 
     def __create_link(self, credentials_path: str = ""):
         try:
-            symlink(credentials_path, f"{CWD}/.credentials")
+            symlink(credentials_path, f"{BASE}/.credentials")
         except FileExistsError:
             PrintC.printc_bold("Configuration file already exists", "YELLOW")
-            unlink(f"{CWD}/.credentials")
+            unlink(f"{BASE}/.credentials")
             self.__create_link(credentials_path)
 
     def set_env(self, environment: str = "dev"):
-        run([f"{CWD}/commands/oc.switch.sh", f"{environment}"])
+        run([f"{BASE}/commands/oc.switch.sh", f"{environment}"])
 
     def get_env(self):
-        run([f"{CWD}/commands/oc.env.sh"])
+        run([f"{BASE}/commands/oc.env.sh"])
 
     def spawn_bash(self, pod_name: str = ""):
-        run(["/bin/bash", "-c", f"{CWD}/commands/oc.enter.sh", f"{pod_name}"])
+        run(["/bin/bash", "-c", f"{BASE}/commands/oc.enter.sh", f"{pod_name}"])
+
+    def set_host(self, host_name: str = ""):
+        if not (not host_name):
+            with open(f"{BASE}/.ochost", "w") as file:
+                file.write(host_name)
+        else:
+            print("The given host name is not valid")
+
+    def get_host(self):
+        if isfile(f"{BASE}/.ochost"):
+            with open(f"{BASE}/.ochost", "r") as file:
+                print(f"Currently using host: {file.readline()}")
+        else:
+            print("Missing host file. Use 'set-host {HOST}' first")
 
     def do_login(self):
         try:
-            with open(f"{CWD}/.credentials", "r") as credentials:
-                username, password = credentials.readlines()
+            if isfile(f"{BASE}/.ochost"):
+                with open(f"{BASE}/.credentials", "r") as credentials:
+                    username, password = credentials.readlines()
 
-            process = Popen([f"{CWD}/commands/oc.login.sh", username, password], stdin=PIPE, stderr=PIPE, stdout=PIPE)
-            output, error = process.communicate()
+                process = Popen([f"{BASE}/commands/oc.login.sh", username, password], stdin=PIPE, stderr=PIPE, stdout=PIPE)
+                output, error = process.communicate()
 
-            lines = output.decode().splitlines()
+                lines = output.decode().splitlines()
 
-            for line in lines:
-                print(line)
+                for line in lines:
+                    print(line)
+            else:
+                print("Missing host file. Use 'set-host {HOST}' first")
         except Exception as e:
             print("An error occurred while logging in")
             print(e)

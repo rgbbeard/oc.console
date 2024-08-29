@@ -8,6 +8,10 @@ from prompt_toolkit.history import FileHistory, InMemoryHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
 console = Console()
+
+# automatically login at startup
+console.do_login()
+
 autocompletion = WordCompleter(console.get_commands())
 history = FileHistory('.sesshstr')
 
@@ -89,9 +93,16 @@ while True:
         elif cmd == "currenv" or cmd == "env" or cmd == "env?":
             console.get_env()
 
-        # needed for login
+        # required before login
         elif argsvalid and (cmd == "set-credentials-path" or cmd == "set-credentials"):
             console.set_credentials_path(args[0])
+
+        # required before login
+        elif argsvalid and cmd == "set-host":
+            console.set_host(args[0])
+
+        elif cmd == "host?" or cmd == "host":
+            console.get_host()
 
         # display a generic help message
         elif cmd == "help":

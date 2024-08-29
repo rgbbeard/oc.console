@@ -27,9 +27,9 @@ if [ ! -d $optdir ]; then
    echo "Installation completed"
 
    # install python requirements
-   if [[ $(cmdexists "python3") -eq 1 ]]; then
+   if cmdexists python3; then
       python3 -m pip install prompt-toolkit
-   elif [[ $(cmdexists "python") -eq 1 ]]; then
+   elif cmdexists python; then
       python -m pip install prompt-toolkit
    fi
 else

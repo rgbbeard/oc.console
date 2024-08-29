@@ -10,8 +10,8 @@ fi
 oc project "$1"
 
 tmp=$(oc project "$1")
-dev=$(echo "$tmp" | grep -E ".*-dev\"")
-prod=$(echo "$tmp" | grep -E ".*-prod.*\"")
+dev=$(echo "$tmp" | grep -E ".*\bdev\b")
+prod=$(echo "$tmp" | grep -E ".*\bprod\b.*")
 
 if [[ -n "$dev" ]]; then
 	eval "$base/oc.env.sh dev"
