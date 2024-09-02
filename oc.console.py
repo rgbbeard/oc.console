@@ -47,11 +47,11 @@ while True:
 
         # list all the available PODS
         if not argsvalid and (cmd == "find" or cmd == "ls"):
-            console.get_pods_list()
+            console.get_pods()
 
         # search for a specific POD
         elif argsvalid and cmd == "find":
-            console.get_pods_list(args[0])
+            console.get_pod(args[0])
 
         # enter bash for the requested POD
         elif argsvalid and cmd == "enter":
@@ -67,21 +67,49 @@ while True:
         # upload a file to the specified path inside a POD
         elif argsvalid and cmd == "upload":
             if len(args) == 2:
-                console.verify_xload_args(args)
-                #console.do_upload(pod_name=args[2], args[4], args[6])
-            pass
+                check = console.verify_xload_args(args, len(args), 1)
+                
+                if check:
+                    console.do_upload(args[0], args[1])
+                else:
+                    print("Invalid command syntax")
+            elif len(args) == 3:
+                check = console.verify_xload_args(args, len(args), 1)
+                
+                if check:
+                    #console.do_upload(pod_name=args[2], args[0], args[1])
+                    pass
+                else:
+                    print("Invalid command syntax")
 
         # download a file from the specified path inside a POD
         elif argsvalid and cmd == "download":
-            print(args)
-            #console.do_download(pod_name=args[1], args[2], args[3])
-            pass
+            if len(args) == 2:
+                check = console.verify_xload_args(args, len(args), 2)
+                
+                if check:
+                    console.do_download(args[0], args[1])
+                else:
+                    print("Invalid command syntax")
+            elif len(args) == 3:
+                check = console.verify_xload_args(args, len(args), 2)
+                
+                if check:
+                    #console.do_download(pod_name=args[2], args[0], args[1])
+                    pass
+                else:
+                    print("Invalid command syntax")
 
         # move a file from a pod to another
         elif argsvalid and cmd == "upload-pod2pod":
-            print("Coming soon")
-            pass
-
+            if len(args) == 2:
+                check = console.verify_xload_args(args, len(args), 3)
+                
+                if check:
+                    console.do_download(args[0], args[1])
+                else:
+                    print("Invalid command syntax")
+        
         # do i need to explain this?
         elif cmd == "login":
             console.do_login()

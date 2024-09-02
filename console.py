@@ -104,16 +104,38 @@ class Console:
             PrintC.printc_bold(f"Manual for {cmd}:", "YELLOW")
             print(self.__help_for.get(cmd))
 
-    def get_pods_list(self, pod_name: str = ""):
-        process = Popen([f"{BASE}/commands/oc.list.pods.sh", pod_name], stdin=PIPE, stderr=PIPE, stdout=PIPE)
+    def get_logs(self, pod_name: str = ""):
+        cmd = ["stern", f"{pod_name}"]
+
+        #run()
+        pass
+
+    def get_pods_list(self):
+        process = Popen(f"{BASE}/commands/oc.list.pods.sh", stdin=PIPE, stderr=PIPE, stdout=PIPE)
         output, error = process.communicate()
 
         lines = output.decode().splitlines()
+        return lines if len(lines) > 0 else []
 
-        for line in lines:
-            print(line)
+    def get_pods(self):
+        pods = self.get_pods_list()
 
-        if len(lines) == 2:
+        for pod in pods:
+            print(pod)
+
+    def get_pod(self, pod_name: str = ""):
+        pods = self.get_pods_list()
+
+        tmp = []
+
+        for pod in pods:
+            if pod_name in pod:
+                tmp.append(pod)
+
+        for t in tmp:
+            print(t)
+
+        if not pods:
             PrintC.printc_bold("No POD found.", "RED")
 
     def set_credentials_path(self, credentials_path: str = ""):
@@ -146,7 +168,7 @@ class Console:
         run([f"{BASE}/commands/oc.env.sh"])
 
     def spawn_bash(self, pod_name: str = ""):
-        run(["/bin/bash", "-c", f"{BASE}/commands/oc.enter.sh", f"{pod_name}"])
+        run([f"{BASE}/commands/oc.enter.sh", f"{pod_name}"])
 
     def set_host(self, host_name: str = ""):
         if not (not host_name):
@@ -188,5 +210,34 @@ class Console:
     def do_download(self, _from: str, _to: str, pod_name: str = "default"):
         print(pod_name, _from, _to)
 
-    def verify_xload_args(self, args: list):
-        print(args)
+    def do_pod2pod_transfer(self, _from: str, _to: str):
+        print(_from, _to)
+
+    def verify_xload_args(self, args: list, argslen: int, xload_type: int):
+        pods = self.get_pods_list()
+
+        if xload_type == 1:
+            if argslen == 2:
+                # expecting paths only
+                for a in args:
+                    if a in pod:
+                        return False
+                return True
+            elif argslen == 3:
+                # expecting the POD name as first parameter
+                pass
+            else: return False
+        elif xload_type == 2:
+            if argslen == 2:
+                # only paths should have been passed
+                pass
+            elif argslen == 3:
+                # expecting the POD name as first parameter
+                pass
+            else: return False
+        elif xload_type == 3:
+            if argslen == 2:
+                # expected syntax: pod_name:/path/to/file for both parameters
+                pass
+            else: return False
+
