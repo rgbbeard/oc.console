@@ -1,28 +1,40 @@
 #!/usr/bin/python
 
-from printc import PrintC
 from subprocess import Popen, PIPE, run
 from os.path import dirname, isfile, islink
 from os import symlink, unlink
+from sys import path
+import importlib.util
 
 BASE = dirname(__file__)
+PARENT = f"{BASE}/.."
+
+# load the Commands class
+spec = importlib.util.spec_from_file_location("c", f"{BASE}/commands.py")
+cmds = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(cmds)
+Commands = cmds.Commands
 
 
 class Console:
-    __help_for: dict = {
+    commands: Commands = None
+
+    __manuel: dict = {
         "help": """Interactive console interface for easier use of the OpenShift Client.
             Commands:
                 help: Display this help message
                 set-credentials: Save your login credentials (required before logging in)
                 login: Log in using your saved credentials (required before executing other commands)
-                upload: Upload a file to a specified POD
-                download: Download a file from a specified POD
-                find: Locate a POD
+                upload: Upload a file to a specified pod
+                download: Download a file from a specified pod
+                find: Locate a pod
                 use-env: Switch between work environments
-                enter: Access a specified POD
+                enter: Access a specified pod
 
             For more details use: help {COMMAND}
         """,
+        "manuel!": "Alias of help",
+        "manuel": "Alias of help",
         "login": """Log in to the OpenShift Client using your credentials. 
             An .ochost file with the host address is required.
         """,
@@ -41,14 +53,14 @@ class Console:
                 set-credentials {PATH}
         """,
         "set-credentials-path": "Alias of set-credentials",
-        "find": "Locate a POD.",
+        "find": "Locate a pod.",
         "ls": "Alias of find",
-        "logs": """Shows the POD logs in real time.
+        "logs": """Shows the pod logs in real time.
             Usage:
                 logs {POD} --since {TIME}
         """,
-        "enter": """Access a POD.
-            You can specify the POD you want to enter, or if no name is provided, the last accessed POD will be used.
+        "enter": """Access a pod.
+            You can specify the pod you want to enter, or if no name is provided, the last accessed pod will be used.
             Usage:
                 enter {POD}
         """,
@@ -59,37 +71,37 @@ class Console:
         "currenv": "Show the current working environment.",
         "env?": "Alias of currenv.",
         "env": "Alias of currenv.",
-        "upload": """Upload a file to a specified POD.
+        "upload": """Upload a file to a specified pod.
             Usage:
-                --pod {POD} or default (uses the last accessed POD)
+                --pod {POD} or default (uses the last accessed pod)
                 --from {path/to/file}, the path to the file you want to upload
-                --to {path/to/destination}, the destination path in the POD
+                --to {path/to/destination}, the destination path in the pod
 
             Example:
                 upload --pod default --from /path/to/somefile.pdf --to /path/to/destination
         """,
-        "download": """Download a file from a specified POD.
+        "download": """Download a file from a specified pod.
             Usage:
-                --pod {POD} or default (uses the last accessed POD)
-                --from {path/to/file}, the path to the file in the POD
+                --pod {POD} or default (uses the last accessed pod)
+                --from {path/to/file}, the path to the file in the pod
                 --to {path/to/destination}, the local destination path for the downloaded file
 
             Example:
                 download --pod default --from /path/to/somefile.pdf --to ~/Downloads
         """,
         "upload-pod2pod": """***Coming soon***
-            Move a file from a POD to another
+            Move a file from a pod to another
         """
     }
 
     def __init__(self):
-        pass
+        self.commands = Commands()
 
-    def get_commands(self):
-        return self.__help_for.keys()
+    def call_manuel(self):
+        return self.__manuel.keys()
 
     def save_history(self, cmd, args, argsvalid):
-        with open(f"{BASE}/.sesshstr", "a") as history:
+        with open(f"{PARENT}/.sesshstr", "a") as history:
             row = "\n"
 
             if not argsvalid:
@@ -100,31 +112,35 @@ class Console:
             history.write(row)
 
     def get_help_for(self, cmd: str = ""):
-        if not (not cmd) and self.__help_for.get(cmd):
-            PrintC.printc_bold(f"Manual for {cmd}:", "YELLOW")
-            print(self.__help_for.get(cmd))
+        if not (not cmd) and self.__manuel.get(cmd):
+            print(f"Manual for {cmd}:")
+            print(self.__manuel.get(cmd))
 
-    def get_logs(self, pod_name: str = ""):
-        cmd = ["stern", f"{pod_name}"]
+    def get_logs(self, pod_name: str = "", _since: str = "30m"):
+        if not _since:
+            _since = "30m"
 
-        #run()
-        pass
+        if self.__is_pod(pod_name):
+            run(["stern", f"{pod_name}", "--since", _since])
+        else:
+            print("Invalid pod name")
 
-    def get_pods_list(self):
-        process = Popen(f"{BASE}/commands/oc.list.pods.sh", stdin=PIPE, stderr=PIPE, stdout=PIPE)
-        output, error = process.communicate()
+    def __is_pod(self, pod_name: str = ""):
+        pods = self.commands.get_pods_list()
 
-        lines = output.decode().splitlines()
-        return lines if len(lines) > 0 else []
+        print(pod_name in pods)
+        exit()
+
+        return True if pod_name in pods else False
 
     def get_pods(self):
-        pods = self.get_pods_list()
+        pods = self.commands.get_pods_list()
 
         for pod in pods:
             print(pod)
 
     def get_pod(self, pod_name: str = ""):
-        pods = self.get_pods_list()
+        pods = self.commands.get_pods_list()
 
         tmp = []
 
@@ -136,72 +152,48 @@ class Console:
             print(t)
 
         if not pods:
-            PrintC.printc_bold("No POD found.", "RED")
+            print("No pod found.")
 
     def set_credentials_path(self, credentials_path: str = ""):
-        PrintC.printc_bold("Now checking the path you entered...", "YELLOW")
+        print("Now checking the path you entered...")
 
         if isfile(credentials_path):
-            PrintC.printc_bold("The file you provided is valid!", "GREEN")
-            PrintC.printc("Saving credentials...", "RED")
+            print("The file you provided is valid!")
+            print("Saving credentials...")
 
             self.__create_link(credentials_path)
 
-            PrintC.printc_bold("Done", "GREEN")
+            print("Done")
 
-            self.do_login()
+            self.commands.do_login()
         else:            
-            PrintC.printc_bold("The provided file is not valid", "RED")
+            print("The provided file is not valid")
 
     def __create_link(self, credentials_path: str = ""):
         try:
             symlink(credentials_path, f"{BASE}/.credentials")
         except FileExistsError:
-            PrintC.printc_bold("Configuration file already exists", "YELLOW")
-            unlink(f"{BASE}/.credentials")
+            print("Configuration file already exists")
+            unlink(f"{PARENT}/.credentials")
             self.__create_link(credentials_path)
-
-    def set_env(self, environment: str = "dev"):
-        run([f"{BASE}/commands/oc.switch.sh", f"{environment}"])
-
-    def get_env(self):
-        run([f"{BASE}/commands/oc.env.sh"])
-
-    def spawn_bash(self, pod_name: str = ""):
-        run([f"{BASE}/commands/oc.enter.sh", f"{pod_name}"])
 
     def set_host(self, host_name: str = ""):
         if not (not host_name):
-            with open(f"{BASE}/.ochost", "w") as file:
+            with open(f"{PARENT}/.ochost", "w") as file:
                 file.write(host_name)
         else:
             print("The given host name is not valid")
 
     def get_host(self):
-        if isfile(f"{BASE}/.ochost"):
-            with open(f"{BASE}/.ochost", "r") as file:
+        if isfile(f"{PARENT}/.ochost"):
+            with open(f"{PARENT}/.ochost", "r") as file:
                 print(f"Currently using host: {file.readline()}")
         else:
             print("Missing host file. Use 'set-host {HOST}' first")
 
-    def do_login(self):
-        try:
-            if isfile(f"{BASE}/.ochost"):
-                with open(f"{BASE}/.credentials", "r") as credentials:
-                    username, password = credentials.readlines()
-
-                process = Popen([f"{BASE}/commands/oc.login.sh", username, password], stdin=PIPE, stderr=PIPE, stdout=PIPE)
-                output, error = process.communicate()
-
-                lines = output.decode().splitlines()
-
-                for line in lines:
-                    print(line)
-            else:
-                print("Missing host file. Use 'set-host {HOST}' first")
-        except Exception as e:
-            print("An error occurred while logging in")
-            print(e)
+    def get_envs(self):
+        for c in self.commands.get_envs():
+            print(c)
 
     # TODO: complete these features
     def do_upload(self, _from: str, _to: str, pod_name: str = "default"):
@@ -224,7 +216,7 @@ class Console:
                         return False
                 return True
             elif argslen == 3:
-                # expecting the POD name as first parameter
+                # expecting the pod name as first parameter
                 pass
             else: return False
         elif xload_type == 2:
@@ -232,7 +224,7 @@ class Console:
                 # only paths should have been passed
                 pass
             elif argslen == 3:
-                # expecting the POD name as first parameter
+                # expecting the pod name as first parameter
                 pass
             else: return False
         elif xload_type == 3:
@@ -240,4 +232,3 @@ class Console:
                 # expected syntax: pod_name:/path/to/file for both parameters
                 pass
             else: return False
-
