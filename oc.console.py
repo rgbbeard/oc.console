@@ -7,6 +7,7 @@ from prompt_toolkit import PromptSession, prompt
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.history import FileHistory, InMemoryHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from typing import Union
 import importlib.util
 
 BASE = dirname(__file__)
@@ -21,7 +22,6 @@ console = Console()
 
 # automatically login at startup
 console.commands.do_login()
-
 autocompletion = WordCompleter(console.call_manuel())
 history = FileHistory('.sesshstr')
 
@@ -108,8 +108,11 @@ while True:
         # show pod logs with stern
         elif argsvalid and cmd == "logs":
             _since = None
+            save_logs = False
+            search: Union[str, list] = None
+            debug: bool = False
 
-            for i in range(0, len(args)-1):
+            for i in range(0, len(args)):
                 a = args[i]
 
                 if "--since" == a:
@@ -123,11 +126,25 @@ while True:
                             continue
                     except IndexError as ie:
                         print("'Since' value not found")
-                    finally:
-                        args.pop(i)
-                        args.pop(i+1)
+                if "--save" == a:
+                    save_logs = True
+                if "--debug" == a:
+                    debug = True
+                if "--search" == a:
+                    try:
+                        r = range(i+1, len(args))
 
-            console.get_logs(args[0], _since)
+                        if len(r) > 1:
+                            search = []
+
+                            for j in r:
+                                search.append(args[j])
+                        else:
+                            search = args[i+1]
+                    except IndexError as ie:
+                        print("No filters passed")
+
+            console.get_logs(args[0], _since=_since, search=search, save_logs=save_logs, debug=debug)
 
         # upload a file to the specified path inside a pod
         elif argsvalid and cmd == "upload":
@@ -175,4 +192,4 @@ while True:
                 else:
                     print("Invalid command syntax")
     except KeyboardInterrupt as ki:
-        exit()
+        print("Type 'exit' to terminate the session")

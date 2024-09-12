@@ -4,6 +4,7 @@ from subprocess import Popen, PIPE, run
 from os.path import dirname, isfile, islink
 from os import symlink, unlink
 from sys import path
+from typing import Union
 import importlib.util
 
 BASE = dirname(__file__)
@@ -116,22 +117,65 @@ class Console:
             print(f"Manual for {cmd}:")
             print(self.__manuel.get(cmd))
 
-    def get_logs(self, pod_name: str = "", _since: str = "30m"):
+    def get_logs(
+        self, 
+        pod_name: str = None, 
+        _since: str = "30m", 
+        save_logs: bool = False,
+        search: Union[str, list] = None,
+        debug: bool = False
+    ):
         if not _since:
             _since = "30m"
 
-        if self.__is_pod(pod_name):
-            run(["stern", f"{pod_name}", "--since", _since])
+        cmd = ["stern", f"{pod_name}", "--since", _since]
+
+        # filter with one or more keywords
+        if search is not None and (not (not search) or len(search) > 0):
+            if isinstance(search, str):
+                cmd.append("|")
+                cmd.append("grep")
+                cmd.append(search)
+            elif isinstance(search, list):
+                for keyword in search:
+                    cmd.append("|")
+                    cmd.append("grep")
+                    cmd.append(keyword)
+
+        if save_logs:
+            logfile = f"{pod_name}.log"
+
+            cmd.append("|")
+            cmd.append("tee")
+            cmd.append(logfile)
+            print(f"Saving log file: {logfile}\n\n")
+
+        if not (not pod_name) and self.__is_pod(pod_name):
+            if debug:
+                print(
+                    f"Query: {' '.join(cmd)}\n",
+                    "Params:\n",
+                    f"pod_name: {pod_name}\n",
+                    f"_since: {_since}\n",
+                    f"save_logs: {save_logs}\n",
+                    f"search: {[type(search), search]}\n"
+                )
+                return
+
+            try:
+                run(cmd)
+            except KeyboardInterrupt as ki:
+                print("\n\nOkay, bye!")
+                pass
         else:
             print("Invalid pod name")
 
     def __is_pod(self, pod_name: str = ""):
         pods = self.commands.get_pods_list()
 
-        print(pod_name in pods)
-        exit()
-
-        return True if pod_name in pods else False
+        for pod in pods:
+            if pod_name in pod:
+                return True
 
     def get_pods(self):
         pods = self.commands.get_pods_list()

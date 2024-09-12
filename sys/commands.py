@@ -65,7 +65,7 @@ class Commands:
             print("No pod found")
             pass
 
-        run(["oc", "rsh", f"{pod_name}", "bash"])
+        run(["oc", "rsh", f"{pod_name}", "sh"])
 
     def do_login(self):
         try:
