@@ -5,6 +5,7 @@ from os.path import dirname, isfile, islink
 from os import symlink, unlink
 from sys import path
 from typing import Union
+from re import search
 import importlib.util
 
 BASE = dirname(__file__)
@@ -252,7 +253,7 @@ class Console:
     def verify_xload_args(self, args: list, argslen: int, xload_type: int):
         pods = self.get_pods_list()
 
-        if xload_type == 1:
+        if xload_type == 1 or xload_type == 2:
             if argslen == 2:
                 # expecting paths only
                 for a in args:
@@ -261,18 +262,24 @@ class Console:
                 return True
             elif argslen == 3:
                 # expecting the pod name as first parameter
-                pass
-            else: return False
-        elif xload_type == 2:
-            if argslen == 2:
-                # only paths should have been passed
-                pass
-            elif argslen == 3:
-                # expecting the pod name as first parameter
-                pass
-            else: return False
+                if args[0] in pods:
+                    if args[1] in pods or args[2] in pods:
+                        return False
+                    return True
+                return False
+            else:
+                return False
         elif xload_type == 3:
             if argslen == 2:
                 # expected syntax: pod_name:/path/to/file for both parameters
-                pass
-            else: return False
+                """ example:
+                        pod-name-randnum1234155:/upload/path/to/file.pdf
+                        pod-name-randnum1234155:/upload/path/to/file.tar.gz.zip
+                """
+                pod1 = search(r"([\w\/-]+):([\w\/-]+)(\.[\w]{2,5})*", args[0])
+                pod2 = search(r"([\w\/-]+):([\w\/-]+)(\.[\w]{2,5})*", args[1])
+
+                if pod1.group(0) in pods and pod2 in pods:
+                    return True
+            else:
+                return False
