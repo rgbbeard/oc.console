@@ -12,7 +12,7 @@ class Commands:
     envs = None
 
     def __init__(self):
-        envs = self.get_envs()
+        self.envs = self.get_envs()
 
     def get_pods_list(self):
         process = Popen(["oc", "get", "pod"], stdin=PIPE, stderr=PIPE, stdout=PIPE)
@@ -26,7 +26,29 @@ class Commands:
         output, error = process.communicate()
 
         lines = output.decode().splitlines()
-        return lines if len(lines) > 0 else []
+
+        if len(lines) > 0:
+            tmp = []
+
+            for line in lines:
+                if not line:
+                    continue
+                else:
+                    tmp.append(line)
+
+            # remove first and last element
+            tmp.pop(0)
+            tmp.pop()
+
+            for l in range(0, len(tmp)):
+                line = tmp[l]
+
+                line = line.replace("*", "")
+                tmp[l] = sub(r"^\s+|\s+$", "", line)
+
+            return tmp
+        else:
+            return []
 
     def set_env(self, e: str):
         if e in self.envs:
