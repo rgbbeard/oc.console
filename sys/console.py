@@ -266,9 +266,7 @@ class Console:
                     if args[1] in pods or args[2] in pods:
                         return False
                     return True
-                return False
-            else:
-                return False
+            return False
         elif xload_type == 3:
             if argslen == 2:
                 # expected syntax: pod_name:/path/to/file for both parameters
@@ -276,10 +274,9 @@ class Console:
                         pod-name-randnum1234155:/upload/path/to/file.pdf
                         pod-name-randnum1234155:/upload/path/to/file.tar.gz.zip
                 """
-                pod1 = search(r"([\w\/-]+):([\w\/-]+)(\.[\w]{2,5})*", args[0])
-                pod2 = search(r"([\w\/-]+):([\w\/-]+)(\.[\w]{2,5})*", args[1])
+                pod1 = search(r"([\w\/-]+):([\w\/-]+)(\.[\w]{1,5})*", args[0])
+                pod2 = search(r"([\w\/-]+):([\w\/-]+)(\.[\w]{1,5})*", args[1])
 
-                if pod1.group(0) in pods and pod2 in pods:
+                if pod1.group(0) in pods and pod2.group(0) in pods:
                     return True
-            else:
-                return False
+            return False

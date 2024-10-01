@@ -51,6 +51,12 @@ class Commands:
             return []
 
     def set_env(self, e: str):
+        if not (not e):
+            e = e.strip()
+        else:
+            print("Environment not passed")
+            return
+
         if e in self.envs:
             run(["oc", "project", e])
 
