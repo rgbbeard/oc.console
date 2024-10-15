@@ -5,3 +5,4 @@
 .currpod
 .credentials
 __pycache__/
+sys/__pycache__/
