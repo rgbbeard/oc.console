@@ -83,6 +83,9 @@ class Commands:
     def spawn_bash(self, pod_name: str):
         self.get_env()
 
+        with open(f"{PARENT}/.currpod", "w") as file:
+            file.write(pod_name)
+
         if not pod_name:
             print("No pod specified, looking for the last accessed pod..")
 

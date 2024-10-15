@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from subprocess import Popen, PIPE, CalledProcessError
+from subprocess import Popen, run, PIPE, CalledProcessError
 from os.path import dirname, isfile
 from os import symlink, unlink
 from typing import Union
@@ -94,6 +94,9 @@ class Console:
             Move a file from a pod to another
         """
     }
+
+    POD_AND_FILE_REGEX = r"([\w\/-]+):([\w\/-]+)(\.[\w]{1,5})*"
+    FILE_REGEX = r"([\w\/-]+)(\.[\w]{1,5})*"
 
     def __init__(self):
         self.commands = Commands()
@@ -241,12 +244,41 @@ class Console:
         for c in self.commands.get_envs():
             print(c)
 
-    # TODO: complete these features
+    def get_currpod(self):
+        with open(f"{PARENT}/.currpod", "r") as currpod:
+            return currpod.readline()
+
     def do_upload(self, _from: str, _to: str, pod_name: str = "default"):
-        print(pod_name, _from, _to)
+        try:
+            if pod_name == "default":
+                pod_name = self.get_currpod()
+
+            if not pod_name:
+                print("No valid pod to upload to.\nPlease specify one")
+                return
+
+            print(f"Now uploading: {_from}...\n")
+            run(["oc", "cp", _from, f"{pod_name}:{_to}"])
+        except Exception as e:
+            print(e)
+        finally:
+            print("Process completed\n\n")
 
     def do_download(self, _from: str, _to: str, pod_name: str = "default"):
-        print(pod_name, _from, _to)
+        try:
+            if pod_name == "default":
+                pod_name = self.get_currpod()
+
+            if not pod_name:
+                print("No valid pod to download from.\nPlease specify one")
+                return
+
+            print(f"Now downloading: {_from} to {_to}...\n")
+            run(["oc", "rsync", f"{pod_name}:{_from}", _to])
+        except Exception as e:
+            print(e)
+        finally:
+            print("Process completed\n\n")
 
     def do_pod2pod_transfer(self, _from: str, _to: str):
         print(_from, _to)
@@ -258,25 +290,36 @@ class Console:
             if argslen == 2:
                 # expecting paths only
                 for a in args:
+                    file = search(self.FILE_REGEX, a)
+
                     if a in pod:
+                        return False
+                    elif not file.group(0):
                         return False
                 return True
             elif argslen == 3:
                 # expecting the pod name as first parameter
                 if args[0] in pods:
-                    if args[1] in pods or args[2] in pods:
-                        return False
-                    return True
+                    # expected syntax: /path/to/file for both parameters
+                    """ examples:
+                            /upload/path/to/file.pdf
+                            /upload/path/to/file.tar.gz.zip
+                    """
+                    file1 = search(self.FILE_REGEX, args[1])
+                    file2 = search(self.FILE_REGEX, args[2])
+
+                    if file1.group(0) and file2.group(0):
+                        return True
             return False
         elif xload_type == 3:
             if argslen == 2:
                 # expected syntax: pod_name:/path/to/file for both parameters
-                """ example:
+                """ examples:
                         pod-name-randnum1234155:/upload/path/to/file.pdf
                         pod-name-randnum1234155:/upload/path/to/file.tar.gz.zip
                 """
-                pod1 = search(r"([\w\/-]+):([\w\/-]+)(\.[\w]{1,5})*", args[0])
-                pod2 = search(r"([\w\/-]+):([\w\/-]+)(\.[\w]{1,5})*", args[1])
+                pod1 = search(self.POD_AND_FILE_REGEX, args[0])
+                pod2 = search(self.POD_AND_FILE_REGEX, args[1])
 
                 if pod1.group(0) in pods and pod2.group(0) in pods:
                     return True

@@ -148,47 +148,41 @@ while True:
 
         # upload a file to the specified path inside a pod
         elif argsvalid and cmd == "upload":
+            check = console.verify_xload_args(args, len(args), 1)
+
             if len(args) == 2:
-                check = console.verify_xload_args(args, len(args), 1)
-                
                 if check:
-                    console.do_upload(args[0], args[1])
+                    console.do_upload(_from=args[0], _to=args[1])
                 else:
                     print("Invalid command syntax")
             elif len(args) == 3:
-                check = console.verify_xload_args(args, len(args), 1)
-                
                 if check:
-                    #console.do_upload(pod_name=args[2], args[0], args[1])
-                    continue
+                    console.do_upload(args[0], args[1], args[2])
                 else:
                     print("Invalid command syntax")
 
         # download a file from the specified path inside a pod
         elif argsvalid and cmd == "download":
+            check = console.verify_xload_args(args, len(args), 2)
+
             if len(args) == 2:
-                check = console.verify_xload_args(args, len(args), 2)
-                
                 if check:
                     console.do_download(args[0], args[1])
                 else:
                     print("Invalid command syntax")
             elif len(args) == 3:
-                check = console.verify_xload_args(args, len(args), 2)
-                
                 if check:
-                    #console.do_download(pod_name=args[2], args[0], args[1])
-                    continue
+                    console.do_download(args[0], args[1], args[2])
                 else:
                     print("Invalid command syntax")
 
         # move a file from a pod to another
         elif argsvalid and cmd == "upload-pod2pod":
-            if len(args) == 2:
-                check = console.verify_xload_args(args, len(args), 3)
-                
+            check = console.verify_xload_args(args, len(args), 3)
+
+            if len(args) == 2:  
                 if check:
-                    console.do_download(args[0], args[1])
+                    console.do_pod2pod_transfer(args[0], args[1])
                 else:
                     print("Invalid command syntax")
     except KeyboardInterrupt as ki:
