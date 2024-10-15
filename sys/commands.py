@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from subprocess import Popen, PIPE, run
-from re import search, sub
+from re import sub
 from os.path import dirname, isfile
 
 BASE = dirname(__file__)
