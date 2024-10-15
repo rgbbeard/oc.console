@@ -126,8 +126,6 @@ while True:
                             continue
                     except IndexError as ie:
                         print("'Since' value not found")
-                if "--save" == a:
-                    save_logs = True
                 if "--debug" == a:
                     debug = True
                 if "--search" == a:
