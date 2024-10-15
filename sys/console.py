@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from subprocess import Popen, PIPE, run
+from subprocess import Popen, PIPE, check_output, CalledProcessError
 from os.path import dirname, isfile, islink
 from os import symlink, unlink
 from sys import path
@@ -128,30 +128,12 @@ class Console:
     ):
         if not _since:
             _since = "30m"
-
-        cmd = ["stern", f"{pod_name}", "--since", _since]
-
-        # filter with one or more keywords
-        if search is not None and (not (not search) or len(search) > 0):
-            if isinstance(search, str):
-                cmd.append("|")
-                cmd.append("grep")
-                cmd.append(search)
-            elif isinstance(search, list):
-                for keyword in search:
-                    cmd.append("|")
-                    cmd.append("grep")
-                    cmd.append(keyword)
-
-        if save_logs:
-            logfile = f"{pod_name}.log"
-
-            cmd.append("|")
-            cmd.append("tee")
-            cmd.append(logfile)
-            print(f"Saving log file: {logfile}\n\n")
-
-        if not (not pod_name) and self.__is_pod(pod_name):
+        
+        # Ensure pod_name is valid
+        if pod_name and self.__is_pod(pod_name):
+            cmd = ["stern", pod_name, "--since", _since]
+            
+            # Debug output
             if debug:
                 print(
                     f"Query: {' '.join(cmd)}\n",
@@ -164,10 +146,30 @@ class Console:
                 return
 
             try:
-                run(cmd)
-            except KeyboardInterrupt as ki:
+                process = Popen(cmd, stdout=PIPE)
+                output = process.stdout
+
+                # filter with one or more keywords
+                if search is not None and (isinstance(search, str) or len(search) > 0):
+                    for line in output:
+                        line = line.decode('utf-8').strip()
+
+                        if isinstance(search, str):
+                            if search in line:
+                                print(line)
+
+                        # filter by multiple keywords   
+                        elif isinstance(search, list):        
+                            if all(keyword in line for keyword in search):
+                                print(line)
+                else:
+                    # Output the logs directly if no search filter
+                    for line in process.stdout:
+                        print(line.decode('utf-8').strip())
+            except CalledProcessError as e:
+                print(f"Error occurred: {e}")
+            except KeyboardInterrupt:
                 print("\n\nOkay, bye!")
-                pass
         else:
             print("Invalid pod name")
 
