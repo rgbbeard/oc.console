@@ -1,9 +1,8 @@
 #!/usr/bin/python
 
-from subprocess import Popen, PIPE, check_output, CalledProcessError
-from os.path import dirname, isfile, islink
+from subprocess import Popen, PIPE, CalledProcessError
+from os.path import dirname, isfile
 from os import symlink, unlink
-from sys import path
 from typing import Union
 from re import search
 import importlib.util
