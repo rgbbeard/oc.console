@@ -4,7 +4,7 @@ from subprocess import Popen, run, PIPE, CalledProcessError
 from os.path import dirname, isfile
 from os import symlink, unlink
 from typing import Union
-from re import search
+from re import search, sub
 import importlib.util
 
 BASE = dirname(__file__)
@@ -25,14 +25,19 @@ class Console:
             Commands:
                 help: Display this help message
                 set-credentials: Save your login credentials (required before logging in)
+                set-host: Save the host to login to
+                currhost: Show the current host
                 login: Log in using your saved credentials (required before executing other commands)
                 upload: Upload a file to a specified pod
                 download: Download a file from a specified pod
+                upload-pod2pod: Move a file from one pod to another
                 find: Locate a pod
+                logs: Show logs from a pod in real time
                 use-env: Switch between work environments
+                currenv: Show the current working environment
                 enter: Access a specified pod
 
-            For more details use: help {COMMAND}
+            For more details, use: help {COMMAND}
         """,
         "manuel!": "Alias of help",
         "manuel": "Alias of help",
@@ -74,29 +79,37 @@ class Console:
         "env": "Alias of currenv.",
         "upload": """Upload a file to a specified pod.
             Usage:
-                --pod {POD} or default (uses the last accessed pod)
+                --pod {POD}[optional] or default (uses the last accessed pod)
                 --from {path/to/file}, the path to the file you want to upload
                 --to {path/to/destination}, the destination path in the pod
 
             Example:
+                upload --from /path/to/somefile.pdf --to /path/to/destination
                 upload --pod default --from /path/to/somefile.pdf --to /path/to/destination
         """,
         "download": """Download a file from a specified pod.
             Usage:
-                --pod {POD} or default (uses the last accessed pod)
+                --pod {POD}[optional] or default (uses the last accessed pod)
                 --from {path/to/file}, the path to the file in the pod
                 --to {path/to/destination}, the local destination path for the downloaded file
 
             Example:
+                download --from /path/to/somefile.pdf --to ~/Downloads
                 download --pod default --from /path/to/somefile.pdf --to ~/Downloads
         """,
-        "upload-pod2pod": """***Coming soon***
-            Move a file from a pod to another
+        "upload-pod2pod": """Move a file from a {POD} to another
+            Usage:
+                --from {POD}:{path/to/file}
+                --to {POD}:{path/to/destination}
+
+            Example:
+                upload-pod2pod --from pod-name-1:/path/to/file.php --to pod-name-2:/path/to/destination/
         """
     }
 
     POD_AND_FILE_REGEX = r"([\w\/-]+):([\w\/-]+)(\.[\w]{1,5})*"
     FILE_REGEX = r"([\w\/-]+)(\.[\w]{1,5})*"
+    POD_REGEX = r"([\w\/-]+):"
 
     def __init__(self):
         self.commands = Commands()
@@ -281,7 +294,31 @@ class Console:
             print("Process completed\n\n")
 
     def do_pod2pod_transfer(self, _from: str, _to: str):
-        print(_from, _to)
+        print(f"Starting transfer from {_from} to {_to}")
+        pod1 = search(self.POD_REGEX, _from).group(0).replace(":", "")
+        pod2 = search(self.POD_REGEX, _to).group(0).replace(":", "")
+
+        path1 = sub(self.POD_REGEX, "", _from)
+        # extract filename
+        file1 = path1.split("/")[-1]
+        path2 = sub(self.POD_REGEX, "", _to)
+
+        print(f"Downloading {_from} locally...\n")
+        """ example usage:
+                upload-pod2pod --from pod-name-1:/path/to/file.php --to pod-name-2:/path/to/destination/
+        """
+        self.do_download(path1, ".", pod1)
+        print(f"Uploading {_from} to {_to}...\n")
+        self.do_upload(file1, path2, pod2)
+
+        # deleting the downloaded file
+        try:
+            print("Deleting locally downloaded files...")
+            unlink(file1)
+        except FileNotFoundError:
+            print(f"File not found: {file1}.\nMaybe it wasn't downloaded?")
+        finally:
+            print("Process completed\n\n")
 
     def verify_xload_args(self, args: list, argslen: int, xload_type: int):
         pods = self.get_pods_list()
