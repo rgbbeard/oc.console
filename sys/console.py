@@ -321,7 +321,7 @@ class Console:
             print("Process completed\n\n")
 
     def verify_xload_args(self, args: list, argslen: int, xload_type: int):
-        pods = self.get_pods_list()
+        pods = self.commands.get_pods_list()
 
         if xload_type == 1 or xload_type == 2:
             if argslen == 2:
