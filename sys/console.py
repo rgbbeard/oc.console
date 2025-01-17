@@ -124,7 +124,7 @@ class Console:
             if not argsvalid:
                 row += cmd
             else:
-                row += " ".join(args)
+                row += cmd + " " + " ".join(args)
 
             history.write(row)
 
@@ -329,7 +329,7 @@ class Console:
                 for a in args:
                     file = search(self.FILE_REGEX, a)
 
-                    if a in pod:
+                    if a in pods:
                         return False
                     elif not file.group(0):
                         return False
