@@ -107,9 +107,9 @@ while True:
 
         # show pod logs with stern
         elif argsvalid and cmd == "logs":
-            _since = None
+            since = None
             save_logs = False
-            search: Union[str, list] = None
+            search_: Union[str, list] = None
             debug: bool = False
 
             for i in range(0, len(args)):
@@ -117,10 +117,10 @@ while True:
 
                 if "--since" == a:
                     try:
-                        _since = args[i+1]
+                        since = args[i+1]
 
                         # example: --since 1h24m10s
-                        matches = search(r"(\d{1,2}[h|m|s])?", _since)
+                        matches = search(r"(\d{1,2}[h|m|s])?", since)
                         if not matches:
                             print("'Since' value not valid")
                             continue
@@ -133,16 +133,16 @@ while True:
                         r = range(i+1, len(args))
 
                         if len(r) > 1:
-                            search = []
+                            search_ = []
 
                             for j in r:
-                                search.append(args[j])
+                                search_.append(args[j])
                         else:
-                            search = args[i+1]
+                            search_ = args[i+1]
                     except IndexError as ie:
                         print("No filters passed")
 
-            console.get_logs(args[0], _since=_since, search=search, save_logs=save_logs, debug=debug)
+            console.get_logs(args[0], since=since, search=search_, save_logs=save_logs, debug=debug)
 
         # upload a file to the specified path inside a pod
         elif argsvalid and cmd == "upload":

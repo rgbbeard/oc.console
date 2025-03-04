@@ -136,17 +136,17 @@ class Console:
     def get_logs(
         self, 
         pod_name: str = None, 
-        _since: str = "30m", 
+        since: str = "30m", 
         save_logs: bool = False,
         search: Union[str, list] = None,
         debug: bool = False
     ):
-        if not _since:
-            _since = "30m"
+        if not since:
+            since = "30m"
         
         # Ensure pod_name is valid
         if pod_name and self.__is_pod(pod_name):
-            cmd = ["stern", pod_name, "--since", _since]
+            cmd = ["stern", pod_name, "--since", since]
             
             # Debug output
             if debug:
@@ -154,7 +154,7 @@ class Console:
                     f"Query: {' '.join(cmd)}\n",
                     "Params:\n",
                     f"pod_name: {pod_name}\n",
-                    f"_since: {_since}\n",
+                    f"since: {since}\n",
                     f"save_logs: {save_logs}\n",
                     f"search: {[type(search), search]}\n"
                 )
