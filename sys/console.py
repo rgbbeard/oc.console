@@ -107,9 +107,9 @@ class Console:
         """
     }
 
-    POD_AND_FILE_REGEX = r"([\w\/-]+):([\w\/-]+)(\.[\w]{1,5})*"
     FILE_REGEX = r"([\w\/-]+)(\.[\w]{1,5})*"
     POD_REGEX = r"([\w\/-]+):"
+    POD_AND_FILE_REGEX = POD_REGEX + FILE_REGEX
 
     def __init__(self):
         self.commands = Commands()
