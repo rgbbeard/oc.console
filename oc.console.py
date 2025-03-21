@@ -75,7 +75,7 @@ while True:
 
         # required before login
         elif argsvalid and cmd == "set-host":
-            console.commands.set_host(args[0])
+            console.set_host(args[0])
 
         elif cmd == "currhost" or cmd == "host" or cmd == "host?":
             console.get_host()
