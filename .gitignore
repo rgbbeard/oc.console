@@ -3,6 +3,7 @@
 .sesshstr
 .currenv
 .currpod
+.currhost
 .credentials
 __pycache__/
 sys/__pycache__/
