@@ -7,59 +7,568 @@ Install stern [here](https://github.com/stern/stern)
 
 Install oc.console
 
-```bash
+```
 sudo chmod +x install.sh
 sudo ./install.sh
 ```
 
-## Documentation
-  - #### help: Interactive console interface for easier use of the OpenShift Client.
-    For more details use: help {COMMAND}
-- #### login: Log in to the OpenShift Client using your credentials. 
-    A host file with the host address is required.
-    Use set-host 
-- #### set-credentials: Save your login credentials.
-    This command requires the path to the file containing the login credentials.
-    The file should contain only the username and password, each on a separate line.
-    ###### Usage:
-      set-credentials {PATH}
-- #### set-host: Save the host to login to.
-    ###### Usage:
-      set-host http://host.example
-- #### currhost: Show the host that's currently in use.
-- #### host?: Alias of currhost
-- #### host: Alias of currhost
-- #### set-credentials-path: Alias of set-credentials
-- #### find: Locate a POD.
-- #### ls: Alias of find
-- #### logs: Shows the POD logs in real time.
-    ###### Usage:
-      logs {POD} --since {TIME}
-- #### enter: Access a POD.
-    You can specify the POD you want to enter, or if no name is provided, the last accessed POD will be used.
-    ###### Usage:
-      enter {POD}
-- #### use-env: Switch between work environments.
-    ###### Usage:
-      use-env {ENVIRONMENT}
-- #### currenv: Show the current working environment
-- #### env?: Alias of currenv
-- #### env: Alias of currenv
-- #### upload: Upload a file to a specified POD.
-    ###### Usage:
-      --pod {POD} or default (uses the last accessed POD)
-      --from {path/to/file}, the path to the file you want to upload
-      --to {path/to/destination}, the destination path in the POD
-    ###### Example:
-      upload --pod default --from /path/to/somefile.pdf --to /path/to/destination
-- #### download: Download a file from a specified POD.
-    ###### Usage:
-      --pod {POD} or default (uses the last accessed POD)
-      --from {path/to/file}, the path to the file in the POD
-      --to {path/to/destination}, the local destination path for the downloaded file
-    ###### Example:
-      download --pod default --from /path/to/somefile.pdf --to ~/Downloads
-
-## Features
-
-- #### upload-pod2pod: allows you to transfer files from a pod to another
+## Commands list
+<table>
+    <thead>
+        <tr>
+            <th>Command</th>
+            <th>Parameters</th>
+            <th>Example</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                <code>help</code>
+            </td>
+            <td>
+                <small>
+                    <ul>
+                        <li>
+                            command (optional)
+                        </li>
+                    </ul>
+                </small>
+            </td>
+            <td>
+                <code>help {command}</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Displays details about this program; Displays details and usage of a specified command
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>manuel</code>
+            </td>
+            <td>
+                <small>
+                    <ul>
+                        <li>
+                            command (optional)
+                        </li>
+                    </ul>
+                </small>
+            </td>
+            <td>
+                <code>manuel {command}</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Alias of help
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>manuel!</code>
+            </td>
+            <td>
+                <small>
+                    <ul>
+                        <li>
+                            command (optional)
+                        </li>
+                    </ul>
+                </small>
+            </td>
+            <td>
+                <code>manuel! {command}</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Alias of help
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>login</code>
+            </td>
+            <td>
+                <small>
+                    <ul>
+                        <li>
+                            command (optional)
+                        </li>
+                    </ul>
+                </small>
+            </td>
+            <td>
+                <code>login</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Log into OpenShift using your credentials.
+                        <br/>
+                        A <b>.host</b> file with the host address is required, use <code>set-host</code> to create it.
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>set-credentials</code>
+            </td>
+            <td>
+                <small>
+                    <ul>
+                        <li>
+                            /path/to/credentials.txt
+                        </li>
+                    </ul>
+                </small>
+            </td>
+            <td>
+                <code>set-credentials credentials.txt</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Save your login credentials.
+                        <br/>
+                        This command requires the path to the file containing the login credentials.
+                        <br/>
+                        The file should contain only the username and password, each on a separate line
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>set-credentials-path</code>
+            </td>
+            <td>
+                <small>
+                    <ul>
+                        <li>
+                            /path/to/credentials.txt
+                        </li>
+                    </ul>
+                </small>
+            </td>
+            <td>
+                <code>set-credentials-path credentials.txt</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Alias of set-credentials
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>set-host</code>
+            </td>
+            <td>
+                <small>
+                    <ul>
+                        <li>
+                            host
+                        </li>
+                    </ul>
+                </small>
+            </td>
+            <td>
+                <code>set-host http(s)://domain.example</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Save the host to login to
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>currhost</code>
+            </td>
+            <td>
+                <br/>
+            </td>
+            <td>
+                <code>currhost</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Displays the host that's currently in use
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>host?</code>
+            </td>
+            <td>
+                <br/>
+            </td>
+            <td>
+                <code>host?</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Alias of currhost
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>host</code>
+            </td>
+            <td>
+                <br/>
+            </td>
+            <td>
+                <code>host</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Alias of currhost
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>find</code>
+            </td>
+            <td>
+                <small>
+                    <ul>
+                        <li>
+                            {pod name} or {partial pod name}
+                        </li>
+                    </ul>
+                </small>
+            </td>
+            <td>
+                <code>find pod-name</code>
+                <br/>
+                <code>find partial-pod-name</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Find a pod
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>ls</code>
+            </td>
+            <td>
+                <small>
+                    <ul>
+                        <li>
+                            {pod name} or {partial pod name}
+                        </li>
+                    </ul>
+                </small>
+            </td>
+            <td>
+                <code>find pod-name</code>
+                <br/>
+                <code>find partial-pod-name</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Alias of find
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>logs</code>
+            </td>
+            <td>
+                <small>
+                    <ol>
+                        <li>
+                            {pod name} or {partial pod name}
+                        </li>
+                        <li>
+                            --debug (optional)
+                        </li>
+                        <li>
+                            --sage-logs (optional - <b>currently disabled</b>)
+                        </li>
+                        <li>
+                            --since (optional) hoursminutesseconds
+                            <br/>
+                            (default 30m)
+                        </li>
+                        <li>
+                            --search (optional) space separated filters
+                            <br/>
+                            (must be used at the end of all the options)
+                        </li>
+                    </ol>
+                </small>
+            </td>
+            <td>
+                <code>logs pod-name</code>
+                <br/>
+                <code>logs partial-pod-name</code>
+                <br/>
+                <code>logs pod-name --since 1h2m3s</code>
+                <br/>
+                <code>logs pod-name --since 1h2m3s --search filters....</code>
+                <br/>
+                <code>logs pod-name --search filters....</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Displays the logs for the requested pod
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>enter</code>
+            </td>
+            <td>
+                <small>
+                    <ul>
+                        <li>
+                            pod-name
+                        </li>
+                    </ul>
+                </small>
+            </td>
+            <td>
+                <code>enter pod-name</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Enters the pod's console.
+                        <br/>
+                        The accessed pod is saved inside the <b>.currpod</b> file
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>use-env</code>
+            </td>
+            <td>
+                <small>
+                    <ul>
+                        <li>
+                            project-name
+                        </li>
+                    </ul>
+                </small>
+            </td>
+            <td>
+                <code>use-env project-name</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Switches to the requested project.
+                        <br/>
+                        If it has <b>dev</b> or <b>prod</b> at the end of its name, automatically determines the work environment
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>currenv</code>
+            </td>
+            <td>
+                <br/>
+            </td>
+            <td>
+                <code>currenv</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Displays the current work environment
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>env?</code>
+            </td>
+            <td>
+                <br/>
+            </td>
+            <td>
+                <code>env?</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Alias of currenv
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>env</code>
+            </td>
+            <td>
+                <br/>
+            </td>
+            <td>
+                <code>env</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Alias of currenv
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>upload</code>
+            </td>
+            <td>
+                <small>
+                    <h6>Method1</h6>
+                    <ol>
+                        <li>
+                            /path/to/source/file
+                        </li>
+                        <li>
+                            /path/to/destination/folder (<b>inside the pod</b>)
+                        </li>
+                    </ol>
+                    <br/>
+                    <h6>Method2</h6>
+                    <ol>
+                        <li>
+                            pod-name
+                        </li>
+                        <li>
+                            /path/to/source/file
+                        </li>
+                        <li>
+                            /path/to/destination/folder (<b>inside the pod</b>)
+                        </li>
+                    </ol>
+                </small>
+            </td>
+            <td>
+                <code>upload /path/to/source/file /path/to/destination/folder</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Uploads a file to the selected location inside a pod.
+                        <br/>
+                        If no pod is specified, it looks into the <b>.currpod</b> file for the last accessed pod (see <code>enter</code> command).
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>download</code>
+            </td>
+            <td>
+                <small>
+                    <h6>Method1</h6>
+                    <ol>
+                        <li>
+                            /path/to/source/file (<b>inside the pod</b>)
+                        </li>
+                        <li>
+                            /path/to/destination/folder
+                        </li>
+                    </ol>
+                    <br/>
+                    <h6>Method2</h6>
+                    <ol>
+                        <li>
+                            pod-name
+                        </li>
+                        <li>
+                            /path/to/source/file (<b>inside the pod</b>)
+                        </li>
+                        <li>
+                            /path/to/destination/folder
+                        </li>
+                    </ol>
+                </small>
+            </td>
+            <td>
+                <code>download /path/to/source/file /path/to/destination/folder</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Downloads a file from the selected location inside a pod.
+                        <br/>
+                        If no pod is specified, it looks into the <b>.currpod</b> file for the last accessed pod (see <code>enter</code> command).
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>upload-pod2pod</code>
+            </td>
+            <td>
+                <small>
+                    <ol>
+                        <li>
+                            pod-name1:/path/to/source/file
+                        </li>
+                        <li>
+                            pod-name2:/path/to/destination/folder
+                        </li>
+                    </ol>
+                </small>
+            </td>
+            <td>
+                <code>upload-pod2pod pod-name1:/path/to/source/file pod-name2:/path/to/destination/folder</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Copies a file from a pod to another
+                    </small>
+                </p>
+            </td>
+        </tr>
+    </tbody>
+</table>
