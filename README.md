@@ -13,7 +13,13 @@ sudo ./install.sh
 ```
 
 ## Commands list
-<table>
+<blockquote style="color: #f00;"> 
+    Parameters inside unordered lists don't have a specific order
+</blockquote>
+<blockquote style="color: #f00;"> 
+    Parameters inside ordered lists must follow the given order
+</blockquote>
+<table style="font-size: 0.9em;">
     <thead>
         <tr>
             <th>Command</th>
@@ -267,6 +273,7 @@ sudo ./install.sh
             <td>
                 <code>find pod-name</code>
                 <br/>
+                <br/>
                 <code>find partial-pod-name</code>
             </td>
             <td>
@@ -292,6 +299,7 @@ sudo ./install.sh
             </td>
             <td>
                 <code>find pod-name</code>
+                <br/>
                 <br/>
                 <code>find partial-pod-name</code>
             </td>
@@ -335,11 +343,15 @@ sudo ./install.sh
             <td>
                 <code>logs pod-name</code>
                 <br/>
+                <br/>
                 <code>logs partial-pod-name</code>
+                <br/>
                 <br/>
                 <code>logs pod-name --since 1h2m3s</code>
                 <br/>
+                <br/>
                 <code>logs pod-name --since 1h2m3s --search filters....</code>
+                <br/>
                 <br/>
                 <code>logs pod-name --search filters....</code>
             </td>
