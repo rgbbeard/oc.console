@@ -391,6 +391,24 @@ sudo ./install.sh
         </tr>
         <tr>
             <td>
+                <code>envs</code>
+            </td>
+            <td>
+                <br/>
+            </td>
+            <td>
+                <code>envs</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        List all the available projects (<b>oc projects</b> or <b>login</b>)
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
                 <code>use-env</code>
             </td>
             <td>
