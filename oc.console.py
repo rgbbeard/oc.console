@@ -1,29 +1,94 @@
 #!/usr/bin/python
 
+from sys import argv
 from os import system
 from os.path import dirname
 from re import search, sub
-from prompt_toolkit import PromptSession, prompt
-from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit.history import FileHistory, InMemoryHistory
-from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from typing import Union
-import importlib.util
 
+modules = {
+    "prompt_toolkit": {
+        "url": "https://pypi.org/project/prompt-toolkit/",
+        "command": "pip install prompt-toolkit"
+    },
+    "pynput": {
+        "url": "https://pypi.org/project/pynput/",
+        "command": "pip install pynput"
+    }
+}
+
+
+def try_install(module_name: str):
+    command = modules[module_name]["command"]
+
+    print(f"Executing {command}...\n")
+    try:
+        system(command)
+    except Exception as e:
+        print(e)
+        exit()
+
+    print("Restart the console to see the changes")
+    exit()
+
+
+def display_error_message(module_name: str):
+    url = modules[module_name]["url"]
+
+    print(f"Module {module_name} is required\n")
+
+    response = input("Would you like to install it from here? (yes/no) ")
+    if "yes" == response:
+        try_install(module_name)
+    else:
+        print("See {url} for more details\n")
+    exit()
+
+
+try:
+    from prompt_toolkit import PromptSession, prompt
+    from prompt_toolkit.completion import WordCompleter
+    from prompt_toolkit.history import FileHistory, InMemoryHistory
+    from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+except ImportError as ie:
+    display_error_message("prompt_toolkit")
+
+try:
+    from pynput.keyboard import Key, Listener, Controller
+except ImportError as ie:
+    display_error_message("pynput")
+
+from oc_deps_manager import OCDepsManager
+
+# program settings
 BASE = dirname(__file__)
 
+IS_CLONED = bool("--clone" == argv[1])
+
+if IS_CLONED:
+    print("""THIS WINDOW IS RUNNING AS A CLONE, SOME COMMANDS WILL NOT BE AVAILABLE IN THIS MODE!\n""")
+
 # load the Console class
-spec = importlib.util.spec_from_file_location("c", f"{BASE}/sys/console.py")
-cnsl = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(cnsl)
+cnsl = OCDepsManager.module_from_path(f"{BASE}/sys/console.py")
 Console = cnsl.Console
 
+# load the ThreadMaid class
+thdmd = OCDepsManager.module_from_path(f"{BASE}/sys/thread_maid.py")
+ThreadMaid = thdmd.ThreadMaid
+
 console = Console()
+commands_thread = ThreadMaid()
 
 # automatically login at startup
 console.commands.do_login()
 autocompletion = WordCompleter(console.call_manuel())
 history = FileHistory('.sesshstr')
+
+
+def detect_console_commands():
+    pass
+
+commands_thread.setup(target=detect_console_commands).run()
 
 
 def prompt(ppt):
