@@ -35,9 +35,9 @@ def try_install(module_name: str):
 def display_error_message(module_name: str):
     url = modules[module_name]["url"]
 
-    print(f"Module {module_name} is required\n")
+    print(f"Package {module_name} is required\n")
 
-    response = input("Would you like to install it from here? (yes/no) ")
+    response = input("Would you like to install it now? (yes/no) ")
     if "yes" == response:
         try_install(module_name)
     else:
@@ -63,7 +63,7 @@ from oc_deps_manager import OCDepsManager
 # program settings
 BASE = dirname(__file__)
 
-IS_CLONED = bool("--clone" == argv[1])
+IS_CLONED = len(argv) > 1 and not (not argv[1]) and bool("--clone" == argv[1])
 
 if IS_CLONED:
     print("""THIS WINDOW IS RUNNING AS A CLONE, SOME COMMANDS WILL NOT BE AVAILABLE IN THIS MODE!\n""")
@@ -217,12 +217,12 @@ while True:
                 if check:
                     console.do_upload(_from=args[0], _to=args[1])
                 else:
-                    print("Invalid command syntax")
+                    print("Invalid command syntax :: 220")
             elif len(args) == 3:
                 if check:
                     console.do_upload(args[0], args[1], args[2])
                 else:
-                    print("Invalid command syntax")
+                    print("Invalid command syntax :: 225")
 
         # download a file from the specified path inside a pod
         elif argsvalid and cmd == "download":
@@ -232,12 +232,12 @@ while True:
                 if check:
                     console.do_download(args[0], args[1])
                 else:
-                    print("Invalid command syntax")
+                    print("Invalid command syntax :: 235")
             elif len(args) == 3:
                 if check:
                     console.do_download(args[0], args[1], args[2])
                 else:
-                    print("Invalid command syntax")
+                    print("Invalid command syntax :: 240")
 
         # move a file from a pod to another
         elif argsvalid and cmd == "upload-pod2pod":
@@ -247,6 +247,9 @@ while True:
                 if check:
                     console.do_pod2pod_transfer(args[0], args[1])
                 else:
-                    print("Invalid command syntax")
+                    print("Invalid command syntax :: 250")
+        else:
+            if not (not cmd):
+                print(f"Command not recognized: {cmd}")
     except KeyboardInterrupt as ki:
         print("Type 'exit' to terminate the session")
