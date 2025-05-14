@@ -79,14 +79,17 @@ ThreadMaid = thdmd.ThreadMaid
 console = Console()
 commands_thread = ThreadMaid()
 
+# TODO: implement login only if necessary
 # automatically login at startup
-console.commands.do_login()
+# console.commands.do_login()
 autocompletion = WordCompleter(console.call_manuel())
 history = FileHistory('.sesshstr')
 
 
+# TODO: complete this feature
 def detect_console_commands():
     pass
+
 
 commands_thread.setup(target=detect_console_commands).run()
 

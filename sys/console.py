@@ -5,15 +5,17 @@ from os.path import dirname, isfile
 from os import symlink, unlink
 from typing import Union
 from re import search, sub
-import importlib.util
+from oc_deps_manager import OCDepsManager
 
 BASE = dirname(__file__)
 PARENT = f"{BASE}/.."
 
+# load the Formatter class
+fmttr = OCDepsManager.module_from_path(f"{BASE}/formatter.py")
+Formatter = fmttr.Formatter
+
 # load the Commands class
-spec = importlib.util.spec_from_file_location("c", f"{BASE}/commands.py")
-cmds = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(cmds)
+cmds = OCDepsManager.module_from_path(f"{BASE}/commands.py")
 Commands = cmds.Commands
 
 
@@ -158,10 +160,10 @@ class Console:
                     f"save_logs: {save_logs}\n",
                     f"search: {[type(search), search]}\n"
                 )
-                return
+                pass
 
             try:
-                process = Popen(cmd, stdout=PIPE)
+                process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=False)
                 output = process.stdout
 
                 # filter with one or more keywords
@@ -171,16 +173,17 @@ class Console:
 
                         if isinstance(search, str):
                             if search in line:
-                                print(line)
+                                print(Formatter.format_log(line))
 
                         # filter by multiple keywords   
-                        elif isinstance(search, list):        
+                        elif isinstance(search, list):
                             if all(keyword in line for keyword in search):
-                                print(line)
+                                print(Formatter.format_log(line))
                 else:
                     # Output the logs directly if no search filter
                     for line in process.stdout:
-                        print(line.decode('utf-8').strip())
+                        l = line.decode('utf-8').strip()
+                        print(Formatter.format_log(l))
             except CalledProcessError as e:
                 print(f"Error occurred: {e}")
             except KeyboardInterrupt:
@@ -188,12 +191,13 @@ class Console:
         else:
             print("Invalid pod name")
 
-    def __is_pod(self, pod_name: str = ""):
+    def __is_pod(self, pod_name: str = "") -> bool:
         pods = self.commands.get_pods_list()
 
         for pod in pods:
             if pod_name in pod:
                 return True
+        return False
 
     def get_pods(self):
         pods = self.commands.get_pods_list()
@@ -261,7 +265,12 @@ class Console:
         with open(f"{PARENT}/.currpod", "r") as currpod:
             return currpod.readline()
 
-    def do_upload(self, _from: str, _to: str, pod_name: str = "default"):
+    def do_upload(
+        self, 
+        _from: str, 
+        _to: str, 
+        pod_name: str = "default"
+    ):
         try:
             if pod_name == "default":
                 pod_name = self.get_currpod()
@@ -277,7 +286,12 @@ class Console:
         finally:
             print("Process completed\n\n")
 
-    def do_download(self, _from: str, _to: str, pod_name: str = "default"):
+    def do_download(
+        self, 
+        _from: str, 
+        _to: str, 
+        pod_name: str = "default"
+    ):
         try:
             if pod_name == "default":
                 pod_name = self.get_currpod()
@@ -320,7 +334,12 @@ class Console:
         finally:
             print("Process completed\n\n")
 
-    def verify_xload_args(self, args: list, argslen: int, xload_type: int):
+    def verify_xload_args(
+        self, 
+        args: list, 
+        argslen: int, 
+        xload_type: int
+    ) -> bool:
         pods = self.commands.get_pods_list()
 
         if xload_type == 1 or xload_type == 2:
@@ -361,3 +380,4 @@ class Console:
                 if pod1.group(0) in pods and pod2.group(0) in pods:
                     return True
             return False
+        return False
