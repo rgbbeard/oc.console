@@ -9,6 +9,9 @@ from oc_deps_manager import OCDepsManager
 
 BASE = dirname(__file__)
 PARENT = f"{BASE}/.."
+FILE_REGEX = r"([\w\/-]+)(\.[\w]{1,5})*"
+POD_REGEX = r"([\w\/-]+):"
+POD_AND_FILE_REGEX = POD_REGEX + FILE_REGEX
 
 # load the Formatter class
 fmttr = OCDepsManager.module_from_path(f"{BASE}/formatter.py")
@@ -108,10 +111,6 @@ class Console:
                 upload-pod2pod --from pod-name-1:/path/to/file.php --to pod-name-2:/path/to/destination/
         """
     }
-
-    FILE_REGEX = r"([\w\/-]+)(\.[\w]{1,5})*"
-    POD_REGEX = r"([\w\/-]+):"
-    POD_AND_FILE_REGEX = POD_REGEX + FILE_REGEX
 
     def __init__(self):
         self.commands = Commands()
@@ -309,13 +308,13 @@ class Console:
 
     def do_pod2pod_transfer(self, _from: str, _to: str):
         print(f"Starting transfer from {_from} to {_to}")
-        pod1 = search(self.POD_REGEX, _from).group(0).replace(":", "")
-        pod2 = search(self.POD_REGEX, _to).group(0).replace(":", "")
+        pod1 = search(POD_REGEX, _from).group(0).replace(":", "")
+        pod2 = search(POD_REGEX, _to).group(0).replace(":", "")
 
-        path1 = sub(self.POD_REGEX, "", _from)
+        path1 = sub(POD_REGEX, "", _from)
         # extract filename
         file1 = path1.split("/")[-1]
-        path2 = sub(self.POD_REGEX, "", _to)
+        path2 = sub(POD_REGEX, "", _to)
 
         print(f"Downloading {_from} locally...\n")
         """ example usage:
@@ -340,19 +339,21 @@ class Console:
         argslen: int, 
         xload_type: int
     ) -> bool:
+        valid = False
         pods = self.commands.get_pods_list()
 
+        # upload and download
         if xload_type == 1 or xload_type == 2:
             if argslen == 2:
                 # expecting paths only
                 for a in args:
-                    file = search(self.FILE_REGEX, a)
+                    file = search(FILE_REGEX, a)
 
                     if a in pods:
-                        return False
+                        valid = False
                     elif not file.group(0):
-                        return False
-                return True
+                        valid = False
+                valid = True
             elif argslen == 3:
                 # expecting the pod name as first parameter
                 if args[0] in pods:
@@ -361,12 +362,13 @@ class Console:
                             /upload/path/to/file.pdf
                             /upload/path/to/file.tar.gz.zip
                     """
-                    file1 = search(self.FILE_REGEX, args[1])
-                    file2 = search(self.FILE_REGEX, args[2])
-
+                    file1 = search(FILE_REGEX, args[1])
+                    file2 = search(FILE_REGEX, args[2])
+                    print(file1.group(0))
+                    print(file2.group(0))
                     if file1.group(0) and file2.group(0):
-                        return True
-            return False
+                        valid = True
+        # upload-pod2pod
         elif xload_type == 3:
             if argslen == 2:
                 # expected syntax: pod_name:/path/to/file for both parameters
@@ -374,10 +376,9 @@ class Console:
                         pod-name-randnum1234155:/upload/path/to/file.pdf
                         pod-name-randnum1234155:/upload/path/to/file.tar.gz.zip
                 """
-                pod1 = search(self.POD_AND_FILE_REGEX, args[0])
-                pod2 = search(self.POD_AND_FILE_REGEX, args[1])
+                pod1 = search(POD_AND_FILE_REGEX, args[0])
+                pod2 = search(POD_AND_FILE_REGEX, args[1])
 
                 if pod1.group(0) in pods and pod2.group(0) in pods:
-                    return True
-            return False
-        return False
+                    valid = True
+        return valid

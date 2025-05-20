@@ -325,7 +325,7 @@ sudo ./install.sh
                             --debug (optional)
                         </li>
                         <li>
-                            --sage-logs (optional - <b>currently disabled</b>)
+                            --save-logs (optional, <b>currently disabled</b>)
                         </li>
                         <li>
                             --since (optional) hoursminutesseconds

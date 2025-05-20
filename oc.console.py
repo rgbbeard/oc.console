@@ -59,14 +59,16 @@ except ImportError as ie:
     display_error_message("pynput")
 
 from oc_deps_manager import OCDepsManager
+import utilities
 
 # program settings
 BASE = dirname(__file__)
+__line__ = utilities._line()
 
 IS_CLONED = len(argv) > 1 and not (not argv[1]) and bool("--clone" == argv[1])
 
 if IS_CLONED:
-    print("""THIS WINDOW IS RUNNING AS A CLONE, SOME COMMANDS WILL NOT BE AVAILABLE IN THIS MODE!\n""")
+    print("""THIS WINDOW IS RUNNING AS A CLONE, SOME COMMANDS WILL NOT BE AVAILABLE IN THIS MODE\n""")
 
 # load the Console class
 cnsl = OCDepsManager.module_from_path(f"{BASE}/sys/console.py")
@@ -125,11 +127,11 @@ while True:
 
         # display a generic help message
         if cmd == "help" or cmd == "manuel" or cmd == "manuel!":
-            console.get_help_for("help")
-
-        # display the manual for a specific command
-        elif argsvalid and (cmd == "help" or cmd == "manuel" or cmd == "manuel!"):
-            console.get_help_for(args[0])
+            # display the manual for a specific command
+            if argsvalid:
+                console.get_help_for(args[0])
+            else:
+                console.get_help_for("help")
 
         elif cmd == "clear" or cmd == "cls":
             system("clear")
@@ -155,102 +157,139 @@ while True:
             console.get_envs()
 
         # set working environment
-        elif argsvalid and cmd == "use-env":
-            console.commands.set_env(args[0])
+        elif cmd == "use-env":
+            if argsvalid:
+                console.commands.set_env(args[0])
+            else:
+                print(f"Command incomplete, please read the documentation for {cmd}")
 
         elif cmd == "currenv" or cmd == "env" or cmd == "env?":
             console.commands.get_env()
 
         # list all the available pods
-        elif not argsvalid and (cmd == "find" or cmd == "ls"):
+        elif cmd == "ls":
             console.get_pods()
 
         # search for a specific pod
-        elif argsvalid and cmd == "find":
-            console.get_pod(args[0])
+        elif cmd == "find":
+            if argsvalid:
+                console.get_pod(args[0])
+            else:
+                print(f"Command incomplete, please read the documentation for {cmd}")
 
         # enter bash for the requested pod
-        elif argsvalid and cmd == "enter":
-            console.commands.spawn_bash(args[0])
+        elif cmd == "enter":
+            if argsvalid:
+                console.commands.spawn_bash(args[0])
+            else:
+                print(f"Command incomplete, please read the documentation for {cmd}")
 
         # show pod logs with stern
-        elif argsvalid and cmd == "logs":
-            since = None
-            save_logs = False
-            search_: Union[str, list] = None
-            debug: bool = False
+        elif cmd == "logs":
+            if argsvalid:
+                since = None
+                save_logs = False
+                search_: Union[str, list] = None
+                debug: bool = False
 
-            for i in range(0, len(args)):
-                a = args[i]
+                for i in range(0, len(args)):
+                    a = args[i]
 
-                if "--since" == a:
-                    try:
-                        since = args[i+1]
+                    if "--since" == a:
+                        try:
+                            since = args[i+1]
 
-                        # example: --since 1h24m10s
-                        matches = search(r"(\d{1,2}[h|m|s])?", since)
-                        if not matches:
-                            print("'Since' value not valid")
-                            continue
-                    except IndexError as ie:
-                        print("'Since' value not found")
-                if "--debug" == a:
-                    debug = True
-                if "--search" == a:
-                    try:
-                        r = range(i+1, len(args))
+                            # example: --since 1h24m10s
+                            matches = search(r"(\d{1,2}[h|m|s])?", since)
+                            if not matches:
+                                print("'Since' value not valid")
+                                continue
+                        except IndexError as ie:
+                            print("'Since' value not found")
+                    if "--debug" == a:
+                        debug = True
+                    if "--save-logs" == a:
+                        save_logs = True
+                    if "--search" == a:
+                        try:
+                            r = range(i+1, len(args))
 
-                        if len(r) > 1:
-                            search_ = []
+                            if len(r) > 1:
+                                search_ = []
 
-                            for j in r:
-                                search_.append(args[j])
-                        else:
-                            search_ = args[i+1]
-                    except IndexError as ie:
-                        print("No filters passed")
+                                for j in r:
+                                    search_.append(args[j])
+                            else:
+                                search_ = args[i+1]
+                        except IndexError as ie:
+                            print("No filters passed")
 
-            console.get_logs(args[0], since=since, search=search_, save_logs=save_logs, debug=debug)
+                console.get_logs(
+                    args[0], 
+                    since=since, 
+                    search=search_, 
+                    save_logs=save_logs, 
+                    debug=debug
+                )
+            else:
+                print(f"Command incomplete, please read the documentation for {cmd}")
 
         # upload a file to the specified path inside a pod
-        elif argsvalid and cmd == "upload":
-            check = console.verify_xload_args(args, len(args), 1)
+        elif cmd == "upload":
+            if argsvalid:
+                check = console.verify_xload_args(args, len(args), 1)
 
-            if len(args) == 2:
-                if check:
-                    console.do_upload(_from=args[0], _to=args[1])
-                else:
-                    print("Invalid command syntax :: 220")
-            elif len(args) == 3:
-                if check:
-                    console.do_upload(args[0], args[1], args[2])
-                else:
-                    print("Invalid command syntax :: 225")
+                if len(args) == 2:
+                    if check:
+                        console.do_upload(_from=args[0], _to=args[1])
+                    else:
+                        print(f"Invalid command syntax :: {__line__}")
+                elif len(args) == 3:
+                    if check:
+                        console.do_upload(
+                            pod_name=args[0], 
+                            _from=args[1], 
+                            _to=args[2]
+                        )
+                    else:
+                        print(f"Invalid command syntax :: {__line__}")
+            else:
+                print(f"Command incomplete, please read the documentation for {cmd}")
 
         # download a file from the specified path inside a pod
-        elif argsvalid and cmd == "download":
-            check = console.verify_xload_args(args, len(args), 2)
+        elif cmd == "download":
+            if argsvalid:
+                check = console.verify_xload_args(args, len(args), 2)
 
-            if len(args) == 2:
-                if check:
-                    console.do_download(args[0], args[1])
-                else:
-                    print("Invalid command syntax :: 235")
-            elif len(args) == 3:
-                if check:
-                    console.do_download(args[0], args[1], args[2])
-                else:
-                    print("Invalid command syntax :: 240")
+                if len(args) == 2:
+                    if check:
+                        console.do_download(_from=args[0], _to=args[1])
+                    else:
+                        print(f"Invalid command syntax :: {__line__}")
+                elif len(args) == 3:
+                    if check:
+                        console.do_download(
+                            pod_name=args[0], 
+                            _from=args[1], 
+                            _to=args[2]
+                        )
+                    else:
+                        print(f"Invalid command syntax :: {__line__}")
+            else:
+                print(f"Command incomplete, please read the documentation for {cmd}")
 
         # move a file from a pod to another
-        elif argsvalid and cmd == "upload-pod2pod":
-            check = console.verify_xload_args(args, len(args), 3)
+        elif cmd == "upload-pod2pod":
+            if argsvalid:
+                check = console.verify_xload_args(args, len(args), 3)
 
-            if len(args) == 2:  
-                if check:
-                    console.do_pod2pod_transfer(args[0], args[1])
-                else:
-                    print("Invalid command syntax :: 250")
+                if len(args) == 2:  
+                    if check:
+                        console.do_pod2pod_transfer(args[0], args[1])
+                    else:
+                        print(f"Invalid command syntax :: {__line__}")
+            else:
+                print(f"Command incomplete, please read the documentation for {cmd}")
         else:
             if not (not cmd):
                 print(f"Command not recognized: {cmd}")

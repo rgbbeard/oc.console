@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
 from subprocess import Popen, PIPE, run
-from re import sub
+from re import sub, search
 from os.path import dirname, isfile
 
 BASE = dirname(__file__)
 PARENT = f"{BASE}/.."
-
+POD_REGEX = r"([\w\/-]+)\s+"
 
 class Commands:
     envs = None
@@ -15,11 +15,21 @@ class Commands:
         self.envs = self.get_envs()
 
     def get_pods_list(self):
+        pods = []
+
         process = Popen(["oc", "get", "pod"], stdin=PIPE, stderr=PIPE, stdout=PIPE)
         output, error = process.communicate()
 
         lines = output.decode().splitlines()
-        return lines if len(lines) > 0 else []
+        # remove header
+        lines.pop(0)
+
+        for line in lines:
+            if search(POD_REGEX, line) is not None:
+                pod = search(POD_REGEX, line).group(0)
+                pods.append(pod.strip())
+
+        return pods if len(pods) > 0 else []
 
     def get_envs(self):
         process = Popen(["oc", "projects"], stdin=PIPE, stderr=PIPE, stdout=PIPE)
@@ -96,7 +106,7 @@ class Commands:
             print("No pod found")
             pass
 
-        run(["oc", "rsh", f"{pod_name}", "sh"])
+        run(["oc", "cp", f"{pod_name}", "sh"])
 
     def do_login(self):
         try:
