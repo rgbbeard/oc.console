@@ -26,89 +26,88 @@ class Console:
     commands: Commands = None
 
     __manuel: dict = {
-        "help": """Interactive console interface for easier use of the OpenShift Client.
-            Commands:
-                help: Display this help message
-                set-credentials: Save your login credentials (required before logging in)
-                set-host: Save the host to login to
-                currhost: Show the current host
-                login: Log in using your saved credentials (required before executing other commands)
-                upload: Upload a file to a specified pod
-                download: Download a file from a specified pod
-                upload-pod2pod: Move a file from one pod to another
-                find: Locate a pod
-                logs: Show logs from a pod in real time
-                use-env: Switch between work environments
-                currenv: Show the current working environment
-                enter: Access a specified pod
-
-            For more details, use: help {COMMAND}
+        "help": """Displays details about this program.
+            You can also use `help {command}` to get more information on a specific command.
         """,
-        "manuel!": "Alias of help",
         "manuel": "Alias of help",
-        "login": """Log in to the OpenShift Client using your credentials. 
-            An .ochost file with the host address is required.
+        "manuel!": "Alias of help",
+        "login": """Log into OpenShift using your credentials.
+            A `.host` file with the host address is required. Use `set-host` to create it.
         """,
-        "set-host": """Save the host to login to.
-            Usage:
-                set-host http://host.example
-        """,
-        "currhost": "Show the host that's currently in use.",
-        "host?": "Alias of currhost.",
-        "host": "Alias of currhost.",
         "set-credentials": """Save your login credentials.
             This command requires the path to the file containing the login credentials.
             The file should contain only the username and password, each on a separate line.
 
             Usage:
-                set-credentials {PATH}
+                set-credentials /path/to/credentials.txt
         """,
-        "set-credentials-path": "Alias of set-credentials",
-        "find": "Locate a pod.",
-        "ls": "Alias of find",
-        "logs": """Shows the pod logs in real time.
+        "set-credentials-path": "Alias of set-credentials.",
+        "set-host": """Save the host to login to.
+
             Usage:
-                logs {POD} --since {TIME}
+                set-host http(s)://domain.example
         """,
-        "enter": """Access a pod.
-            You can specify the pod you want to enter, or if no name is provided, the last accessed pod will be used.
+        "currhost": "Displays the host that's currently in use.",
+        "host?": "Alias of currhost.",
+        "host": "Alias of currhost.",
+        "find": "Find a pod by full or partial name.",
+        "ls": "Alias of find.",
+        "logs": """Displays the logs for the requested pod.
+
             Usage:
-                enter {POD}
+                logs {pod-name} [--debug] [--save-logs] [--since 1h2m3s] [--search filter1 filter2 ...]
+
+            Notes:
+                --since defaults to 30m if not provided.
+                --search must be used at the end.
+                --save-logs is currently disabled.
         """,
-        "use-env": """Switch between work environments.
+        "enter": """Enter the pod's console.
+
             Usage:
-                use-env {ENVIRONMENT}
+                enter pod-name
+
+            Notes:
+                The accessed pod is saved inside the `.currpod` file.
         """,
-        "currenv": "Show the current working environment.",
+        "envs": "List all available OpenShift projects (requires `oc projects` or `login`).",
+        "use-env": """Switch to the requested OpenShift project.
+
+            Usage:
+                use-env project-name
+
+            Notes:
+                Automatically detects work environment if name ends with `dev` or `prod`.
+        """,
+        "currenv": "Displays the current work environment.",
         "env?": "Alias of currenv.",
         "env": "Alias of currenv.",
-        "upload": """Upload a file to a specified pod.
-            Usage:
-                --pod {POD}[optional] or default (uses the last accessed pod)
-                --from {path/to/file}, the path to the file you want to upload
-                --to {path/to/destination}, the destination path in the pod
+        "upload": """Uploads a file to a pod.
 
-            Example:
-                upload --from /path/to/somefile.pdf --to /path/to/destination
-                upload --pod default --from /path/to/somefile.pdf --to /path/to/destination
+            Method 1:
+                upload /path/to/source/file /path/to/destination/folder
+
+            Method 2:
+                upload pod-name /path/to/source/file /path/to/destination/folder
+
+            Notes:
+                If pod is not specified, the `.currpod` file will be used.
         """,
-        "download": """Download a file from a specified pod.
-            Usage:
-                --pod {POD}[optional] or default (uses the last accessed pod)
-                --from {path/to/file}, the path to the file in the pod
-                --to {path/to/destination}, the local destination path for the downloaded file
+        "download": """Downloads a file from a pod.
 
-            Example:
-                download --from /path/to/somefile.pdf --to ~/Downloads
-                download --pod default --from /path/to/somefile.pdf --to ~/Downloads
+            Method 1:
+                download /path/to/source/file /path/to/destination/folder
+
+            Method 2:
+                download pod-name /path/to/source/file /path/to/destination/folder
+
+            Notes:
+                If pod is not specified, the `.currpod` file will be used.
         """,
-        "upload-pod2pod": """Move a file from a {POD} to another
-            Usage:
-                --from {POD}:{path/to/file}
-                --to {POD}:{path/to/destination}
+        "upload-pod2pod": """Copy a file from one pod to another.
 
-            Example:
-                upload-pod2pod --from pod-name-1:/path/to/file.php --to pod-name-2:/path/to/destination/
+            Usage:
+                upload-pod2pod pod1:/path/to/file pod2:/path/to/destination/
         """
     }
 
