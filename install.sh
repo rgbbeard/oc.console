@@ -1,11 +1,10 @@
 #!/bin/bash
-# who ran this script?
 U=${SUDO_USER:-$(whoami)}
-# where am i?
 base="$(dirname $(readlink -f $0))"
-optdir="/opt/oc.console/"
 
 . "$base/.utils/cmdexists.sh"
+. "$base/config.sh"
+. "$base/makeexecutable.sh"
 
 # must run as super user
 if [ "$(id -u)" != "0" ]; then
@@ -13,17 +12,22 @@ if [ "$(id -u)" != "0" ]; then
    exit 1
 fi
 
-if [ ! -d $optdir ]; then
+if [ ! -d "$installdir" ]; then
    echo -e "Starting installation..\n"
    # copy files into the destination folder
-   cp -ir "$base" "/opt/"
+   cp -ir "$base" "$destfolder"
+
+   makeexecutable
+
    # make all the files executable
-   chmod +x "$optdir/commands/*"
-   chmod +x "$optdir/oc.console.desktop"
+   chmod +x "$installdir/commands/*"
+   chmod +x "$installdir/oc.console.desktop"
+   
    # create start icon
-   cp "$optdir/oc.console.desktop" "/usr/share/applications/oc.console.desktop"
+   cp "$installdir/oc.console.desktop" "/usr/share/applications/oc.console.desktop"
+
    # create desktop icon
-   cp "$optdir/oc.console.desktop" "/home/$U/Desktop/oc.console.desktop"
+   cp "$installdir/oc.console.desktop" "/home/$U/Desktop/oc.console.desktop"
    echo "Installation completed"
 
    # install python requirements
@@ -33,5 +37,5 @@ if [ ! -d $optdir ]; then
       python -m pip install prompt-toolkit
    fi
 else
-   echo "The program is already installed and located in /opt/oc.console"
+   echo "The program is already installed and located in $installdir"
 fi

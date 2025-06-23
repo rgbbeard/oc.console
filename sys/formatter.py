@@ -30,7 +30,7 @@ class Formatter:
             data = json.loads(data);
             keys = list(data.keys())
 
-            if keys[0] == "message":
+            if "level" in keys and int(data.get("level")) == 500:
                 return Formatter._format_500_log(data)
 
             l = {}
