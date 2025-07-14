@@ -11,9 +11,6 @@ POD_REGEX = r"([\w\/-]+)\s+"
 class Commands:
     envs = None
 
-    def __init__(self):
-        self.envs = self.get_envs()
-
     def get_pods_list(self):
         pods = []
 
@@ -132,6 +129,9 @@ class Commands:
 
                 for line in lines:
                     print(line)
+
+                if process.returncode == 0:
+                    self.envs = self.get_envs()
             else:
                 print("Missing host file. Use 'set-host {HOST}' first")
         except Exception as e:
