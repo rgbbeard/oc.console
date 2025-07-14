@@ -129,6 +129,24 @@ sudo ./install.sh
         </tr>
         <tr>
             <td>
+                <code>logout</code>
+            </td>
+            <td>
+                <br/>
+            </td>
+            <td>
+                <code>logout</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Logout from your account/end current session
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
                 <code>set-credentials</code>
             </td>
             <td>

@@ -34,6 +34,7 @@ class Console:
         "login": """Log into OpenShift using your credentials.
             A `.host` file with the host address is required. Use `set-host` to create it.
         """,
+        "logout": "Logout from your account/end current session",
         "set-credentials": """Save your login credentials.
             This command requires the path to the file containing the login credentials.
             The file should contain only the username and password, each on a separate line.

@@ -157,6 +157,9 @@ while True:
         
         elif cmd == "login":
             console.commands.do_login()
+        
+        elif cmd == "logout":
+            console.commands.do_logout()
 
         elif cmd == "envs" or cmd == "envs?":
             console.get_envs()

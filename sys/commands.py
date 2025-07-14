@@ -82,14 +82,16 @@ class Commands:
 
     def __save_env(self, e: str):
         if "dev" in e:
-            env = "DEVELOPMENT"
+            env = f"{e} (DEVELOPMENT)"
+        elif "preprod" in e or "test" in e:
+            env = f"{e} (TEST)"
         elif "prod" in e:
-            env = "PRODUCTION"
+            env = f"{e} (PRODUCTION)"
 
         with open(f"{PARENT}/.currenv", "w") as file:
             file.write(env)
 
-        print(f"Currently using environment: {e}({env})")
+        print(f"Currently using environment: {env}")
 
     def spawn_bash(self, pod_name: str):
         self.get_env()
@@ -134,4 +136,13 @@ class Commands:
                 print("Missing host file. Use 'set-host {HOST}' first")
         except Exception as e:
             print("An error occurred while logging in")
+            print(e)
+
+    def do_logout(self):
+        try:
+            print("Logging out...")
+            run(["oc", "logout"])
+            exit()
+        except Exception as e:
+            print("An error occurred while logging out")
             print(e)
