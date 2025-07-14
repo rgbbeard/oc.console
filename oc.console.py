@@ -79,18 +79,19 @@ thdmd = OCDepsManager.module_from_path(f"{BASE}/sys/thread_maid.py")
 ThreadMaid = thdmd.ThreadMaid
 
 console = Console()
-commands_thread = ThreadMaid()
+# commands_thread = ThreadMaid()
 
-# TODO: implement login only if necessary
-# automatically login at startup
-# console.commands.do_login()
+# automatically login if necessary
+if not Console.session_is_valid():
+    print("User is not authenticated or previous session expired")
+    console.commands.do_login()
+
 autocompletion = WordCompleter(console.call_manuel())
 history = FileHistory('.sesshstr')
 
-
 # TODO: complete this feature
-def detect_console_commands():
-    pass
+# def detect_console_commands():
+    # pass
 
 # SEE LINE 92
 # commands_thread.setup(target=detect_console_commands).run()

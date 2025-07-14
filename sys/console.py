@@ -117,6 +117,15 @@ class Console:
     def call_manuel(self):
         return self.__manuel.keys()
 
+    @staticmethod
+    def session_is_valid() -> bool:
+        # oc whoami
+        process = Popen(["oc", "whoami"], stdin=PIPE, stderr=PIPE, stdout=PIPE)
+        output, error = process.communicate()
+
+        message = output.decode().splitlines()
+        return not (not message) and "Error" not in message[0]
+
     def save_history(self, cmd, args, argsvalid):
         with open(f"{PARENT}/.sesshstr", "a") as history:
             row = "\n"
