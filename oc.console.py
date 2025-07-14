@@ -92,8 +92,8 @@ history = FileHistory('.sesshstr')
 def detect_console_commands():
     pass
 
-
-commands_thread.setup(target=detect_console_commands).run()
+# SEE LINE 92
+# commands_thread.setup(target=detect_console_commands).run()
 
 
 def prompt(ppt):
@@ -117,6 +117,10 @@ while True:
 
     if not (not cmd):
         args = cmd.split(" ")
+
+        # remove extra spaces
+        args = utilities.array_clear(args)
+
         # the first element is always the command
         cmd = args.pop(0)
         argsvalid = len(args) >= 1
