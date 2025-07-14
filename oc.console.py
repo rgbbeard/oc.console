@@ -5,6 +5,7 @@ from os import system
 from os.path import dirname
 from re import search, sub
 from typing import Union
+from shlex import split as parse_params
 
 modules = {
     "prompt_toolkit": {
@@ -117,7 +118,11 @@ while True:
     args = []
 
     if not (not cmd):
-        args = cmd.split(" ")
+        try:
+            args = parse_params(cmd)
+        except ValueError as e:
+            print(e)
+            continue
 
         # remove extra spaces
         args = utilities.array_clear(args)
