@@ -8,7 +8,7 @@ def _line():
 
 
 def is_not_empty_value(val: Any) -> bool:
-    return val is not None and val != ""
+    return val is not None and (val != "" or len(val) > 0)
 
 
 def array_clear(

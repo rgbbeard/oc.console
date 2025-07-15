@@ -65,6 +65,10 @@ class Commands:
             print("Environment not passed")
             return
 
+        if len(self.envs) == 0:
+            print("No environments found, try logging in first")
+            return
+
         if e in self.envs:
             run(["oc", "project", e])
 

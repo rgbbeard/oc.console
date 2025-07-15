@@ -64,7 +64,6 @@ import utilities
 
 # program settings
 BASE = dirname(__file__)
-__line__ = utilities._line()
 
 IS_CLONED = len(argv) > 1 and not (not argv[1]) and bool("--clone" == argv[1])
 
@@ -256,7 +255,7 @@ while True:
                     if check:
                         console.do_upload(_from=args[0], _to=args[1])
                     else:
-                        print(f"Invalid command syntax :: {__line__}")
+                        print(f"Invalid command syntax :: {utilities._line()}")
                 elif len(args) == 3:
                     if check:
                         console.do_upload(
@@ -265,7 +264,7 @@ while True:
                             _to=args[2]
                         )
                     else:
-                        print(f"Invalid command syntax :: {__line__}")
+                        print(f"Invalid command syntax :: {utilities._line()}")
             else:
                 print(f"Command incomplete, please read the documentation for {cmd}")
 
@@ -278,7 +277,7 @@ while True:
                     if check:
                         console.do_download(_from=args[0], _to=args[1])
                     else:
-                        print(f"Invalid command syntax :: {__line__}")
+                        print(f"Invalid command syntax :: {utilities._line()}")
                 elif len(args) == 3:
                     if check:
                         console.do_download(
@@ -287,7 +286,7 @@ while True:
                             _to=args[2]
                         )
                     else:
-                        print(f"Invalid command syntax :: {__line__}")
+                        print(f"Invalid command syntax :: {utilities._line()}")
             else:
                 print(f"Command incomplete, please read the documentation for {cmd}")
 
@@ -300,7 +299,7 @@ while True:
                     if check:
                         console.do_pod2pod_transfer(args[0], args[1])
                     else:
-                        print(f"Invalid command syntax :: {__line__}")
+                        print(f"Invalid command syntax :: {utilities._line()}")
             else:
                 print(f"Command incomplete, please read the documentation for {cmd}")
         else:
