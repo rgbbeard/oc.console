@@ -65,7 +65,7 @@ class Commands:
             print("Environment not passed")
             return
 
-        if len(self.envs) == 0:
+        if self.envs is None or len(self.envs) == 0:
             print("No environments found, try logging in first")
             return
 
