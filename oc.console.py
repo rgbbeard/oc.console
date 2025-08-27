@@ -6,6 +6,7 @@ from os.path import dirname
 from re import search, sub
 from typing import Union
 from shlex import split as parse_params
+from utilities import printerr, printinf, printsuc, printalr
 
 modules = {
     "prompt_toolkit": {
@@ -26,7 +27,7 @@ def try_install(module_name: str):
     try:
         system(command)
     except Exception as e:
-        print(e)
+        printerr(e)
         exit()
 
     print("Restart the console to see the changes")
@@ -36,7 +37,7 @@ def try_install(module_name: str):
 def display_error_message(module_name: str):
     url = modules[module_name]["url"]
 
-    print(f"Package {module_name} is required\n")
+    printalr(f"Package {module_name} is required\n")
 
     response = input("Would you like to install it now? (yes/no) ")
     if "yes" == response:
@@ -68,7 +69,7 @@ BASE = dirname(__file__)
 IS_CLONED = len(argv) > 1 and not (not argv[1]) and bool("--clone" == argv[1])
 
 if IS_CLONED:
-    print("""THIS WINDOW IS RUNNING AS A CLONE, SOME COMMANDS WILL NOT BE AVAILABLE IN THIS MODE\n""")
+    printinf("""THIS WINDOW IS RUNNING AS A CLONE, SOME COMMANDS WILL NOT BE AVAILABLE IN THIS MODE\n""")
 
 # load the Console class
 cnsl = OCDepsManager.module_from_path(f"{BASE}/sys/console.py")
@@ -83,7 +84,7 @@ console = Console()
 
 # automatically login if necessary
 if not Console.session_is_valid():
-    print("User is not authenticated or previous session expired")
+    printalr("User is not authenticated or previous session expired")
     console.commands.do_login()
 
 autocompletion = WordCompleter(console.call_manuel())
@@ -173,7 +174,7 @@ while True:
             if argsvalid:
                 console.commands.set_env(args[0])
             else:
-                print(f"Command incomplete, please read the documentation for {cmd}")
+                printalr(f"Command incomplete, please read the documentation for {cmd}")
 
         elif cmd == "currenv" or cmd == "env" or cmd == "env?":
             console.commands.get_env()
@@ -187,14 +188,14 @@ while True:
             if argsvalid:
                 console.get_pod(args[0])
             else:
-                print(f"Command incomplete, please read the documentation for {cmd}")
+                printalr(f"Command incomplete, please read the documentation for {cmd}")
 
         # enter bash for the requested pod
         elif cmd == "enter":
             if argsvalid:
                 console.commands.spawn_bash(args[0])
             else:
-                print(f"Command incomplete, please read the documentation for {cmd}")
+                printalr(f"Command incomplete, please read the documentation for {cmd}")
 
         # show pod logs with stern
         elif cmd == "logs":
@@ -214,10 +215,10 @@ while True:
                             # example: --since 1h24m10s
                             matches = search(r"(\d{1,2}[h|m|s])?", since)
                             if not matches:
-                                print("'Since' value not valid")
+                                printerr("'Since' value not valid")
                                 continue
                         except IndexError as ie:
-                            print("'Since' value not found")
+                            printerr("'Since' value not found")
                     if "--debug" == a:
                         debug = True
                     if "--save-logs" == a:
@@ -234,7 +235,7 @@ while True:
                             else:
                                 search_ = args[i+1]
                         except IndexError as ie:
-                            print("No filters passed")
+                            printerr("No filters passed")
 
                 console.get_logs(
                     args[0], 
@@ -244,7 +245,7 @@ while True:
                     debug=debug
                 )
             else:
-                print(f"Command incomplete, please read the documentation for {cmd}")
+                printalr(f"Command incomplete, please read the documentation for {cmd}")
 
         # upload a file to the specified path inside a pod
         elif cmd == "upload":
@@ -255,7 +256,7 @@ while True:
                     if check:
                         console.do_upload(_from=args[0], _to=args[1])
                     else:
-                        print(f"Invalid command syntax :: {utilities._line()}")
+                        printerr(f"Invalid command syntax :: {utilities._line()}")
                 elif len(args) == 3:
                     if check:
                         console.do_upload(
@@ -264,9 +265,9 @@ while True:
                             _to=args[2]
                         )
                     else:
-                        print(f"Invalid command syntax :: {utilities._line()}")
+                        printerr(f"Invalid command syntax :: {utilities._line()}")
             else:
-                print(f"Command incomplete, please read the documentation for {cmd}")
+                printerr(f"Command incomplete, please read the documentation for {cmd}")
 
         # download a file from the specified path inside a pod
         elif cmd == "download":
@@ -277,7 +278,7 @@ while True:
                     if check:
                         console.do_download(_from=args[0], _to=args[1])
                     else:
-                        print(f"Invalid command syntax :: {utilities._line()}")
+                        printerr(f"Invalid command syntax :: {utilities._line()}")
                 elif len(args) == 3:
                     if check:
                         console.do_download(
@@ -286,9 +287,9 @@ while True:
                             _to=args[2]
                         )
                     else:
-                        print(f"Invalid command syntax :: {utilities._line()}")
+                        printerr(f"Invalid command syntax :: {utilities._line()}")
             else:
-                print(f"Command incomplete, please read the documentation for {cmd}")
+                printerr(f"Command incomplete, please read the documentation for {cmd}")
 
         # move a file from a pod to another
         elif cmd == "upload-pod2pod":
@@ -299,11 +300,11 @@ while True:
                     if check:
                         console.do_pod2pod_transfer(args[0], args[1])
                     else:
-                        print(f"Invalid command syntax :: {utilities._line()}")
+                        printerr(f"Invalid command syntax :: {utilities._line()}")
             else:
-                print(f"Command incomplete, please read the documentation for {cmd}")
+                printerr(f"Command incomplete, please read the documentation for {cmd}")
         else:
             if not (not cmd):
-                print(f"Command not recognized: {cmd}")
+                printerr(f"Command not recognized: {cmd}")
     except KeyboardInterrupt as ki:
-        print("Type 'exit' to terminate the session")
+        console.commands.do_logout()

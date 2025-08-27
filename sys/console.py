@@ -1,11 +1,12 @@
 #!/usr/bin/python
 
 from subprocess import Popen, run, PIPE, CalledProcessError
-from os.path import dirname, isfile
-from os import symlink, unlink
+from os.path import dirname, isfile, isdir, exists
+from os import symlink, unlink, makedirs
 from typing import Union
 from re import search, sub
 from oc_deps_manager import OCDepsManager
+from utilities import printerr, printinf, printsuc, printalr
 
 BASE = dirname(__file__)
 PARENT = f"{BASE}/.."
@@ -111,6 +112,7 @@ class Console:
                 upload-pod2pod pod1:/path/to/file pod2:/path/to/destination/
         """
     }
+    __default_dirmode = 0o777
 
     def __init__(self):
         self.commands = Commands()
@@ -193,7 +195,7 @@ class Console:
                         l = line.decode('utf-8').strip()
                         print(Formatter.format_log(l))
             except CalledProcessError as e:
-                print(f"Error occurred: {e}")
+                printerr(f"Error occurred: {e}")
             except KeyboardInterrupt:
                 print("\n\nOkay, bye!")
         else:
@@ -226,13 +228,13 @@ class Console:
             print(t)
 
         if not pods:
-            print("No pod found.")
+            printalr("No pod found.")
 
     def set_credentials_path(self, credentials_path: str = ""):
         print("Now checking the path you entered...")
 
         if isfile(credentials_path):
-            print("The file you provided is valid!")
+            printinf("The file you provided is valid!")
             print("Saving credentials...")
 
             self.__create_link(credentials_path)
@@ -241,13 +243,13 @@ class Console:
 
             self.commands.do_login()
         else:            
-            print("The provided file is not valid")
+            printerr("The provided file is not valid")
 
     def __create_link(self, credentials_path: str = ""):
         try:
             symlink(credentials_path, f"{BASE}/.credentials")
         except FileExistsError:
-            print("Configuration file already exists")
+            printalr("Configuration file already exists")
             unlink(f"{PARENT}/.credentials")
             self.__create_link(credentials_path)
 
@@ -256,14 +258,14 @@ class Console:
             with open(f"{PARENT}/.ochost", "w") as file:
                 file.write(host_name)
         else:
-            print("The given host name is not valid")
+            printerr("The given host name is not valid")
 
     def get_host(self):
         if isfile(f"{PARENT}/.ochost"):
             with open(f"{PARENT}/.ochost", "r") as file:
                 print(f"Currently using host: {file.readline()}")
         else:
-            print("Missing host file. Use 'set-host {HOST}' first")
+            printerr("Missing host file. Use 'set-host {HOST}' first")
 
     def get_envs(self):
         for c in self.commands.get_envs():
@@ -284,15 +286,15 @@ class Console:
                 pod_name = self.get_currpod()
 
             if not pod_name:
-                print("No valid pod to upload to.\nPlease specify one")
+                printerr("No valid pod to upload to.\nPlease specify one")
                 return
 
-            print(f"Now uploading: {_from}...\n")
+            printinf(f"Now uploading: {_from}...\n")
             run(["oc", "cp", _from, f"{pod_name}:{_to}"])
         except Exception as e:
-            print(e)
+            printerr(e)
         finally:
-            print("Process completed\n\n")
+            printsuc("Process completed\n\n")
 
     def do_download(
         self, 
@@ -305,18 +307,34 @@ class Console:
                 pod_name = self.get_currpod()
 
             if not pod_name:
-                print("No valid pod to download from.\nPlease specify one")
+                printerr("No valid pod to download from.\nPlease specify one")
                 return
 
-            print(f"Now downloading: {_from} to {_to}...\n")
+            # validating destination
+            if not exists(_to):
+                printalr("The destination does not exist")
+
+                try:
+                    printinf("Creating destination directory")
+                    makedirs(_to, self.__default_dirmode)
+
+                except Exception:
+                    printerr("Failed to create destination directory")
+                    return
+
+            if not isdir(_to):
+                printerr("The destination isn't a directory")
+                return
+
+            printinf(f"Now downloading: {_from} to {_to}...\n")
             run(["oc", "rsync", f"{pod_name}:{_from}", _to])
         except Exception as e:
-            print(e)
+            printerr(e)
         finally:
-            print("Process completed\n\n")
+            printsuc("Process completed\n\n")
 
     def do_pod2pod_transfer(self, _from: str, _to: str):
-        print(f"Starting transfer from {_from} to {_to}")
+        printinf(f"Starting transfer from {_from} to {_to}")
         pod1 = search(POD_REGEX, _from).group(0).replace(":", "")
         pod2 = search(POD_REGEX, _to).group(0).replace(":", "")
 
@@ -338,9 +356,9 @@ class Console:
             print("Deleting locally downloaded files...")
             unlink(file1)
         except FileNotFoundError:
-            print(f"File not found: {file1}.\nMaybe it wasn't downloaded?")
+            printerr(f"File not found: {file1}.\nMaybe it wasn't downloaded?")
         finally:
-            print("Process completed\n\n")
+            printsuc("Process completed\n\n")
 
     def verify_xload_args(
         self, 
@@ -373,8 +391,6 @@ class Console:
                     """
                     file1 = search(FILE_REGEX, args[1])
                     file2 = search(FILE_REGEX, args[2])
-                    print(file1.group(0))
-                    print(file2.group(0))
                     if file1.group(0) and file2.group(0):
                         valid = True
         # upload-pod2pod

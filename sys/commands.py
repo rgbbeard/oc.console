@@ -3,6 +3,7 @@
 from subprocess import Popen, PIPE, run
 from re import sub, search
 from os.path import dirname, isfile
+from utilities import printerr, printinf, printsuc, printalr
 
 BASE = dirname(__file__)
 PARENT = f"{BASE}/.."
@@ -62,11 +63,11 @@ class Commands:
         if not (not e):
             e = e.strip()
         else:
-            print("Environment not passed")
+            printerr("Environment not passed")
             return
 
         if self.envs is None or len(self.envs) == 0:
-            print("No environments found, try logging in first")
+            printalr("No environments found, try logging in first")
             return
 
         if e in self.envs:
@@ -74,12 +75,12 @@ class Commands:
 
             self.__save_env(e)
         else:
-            print("Environment not found")
+            printerr("Environment not found")
             print("Use 'envs' to show the available environments")
 
     def get_env(self):
         with open(f"{PARENT}/.currenv", "r") as file:
-            print(f"Currently using environment: {file.readline()}")
+            printinf(f"Currently using environment: {file.readline()}")
 
     def __save_env(self, e: str):
         if "dev" in e:
@@ -101,14 +102,14 @@ class Commands:
             file.write(pod_name)
 
         if not pod_name:
-            print("No pod specified, looking for the last accessed pod..")
+            printalr("No pod specified, looking for the last accessed pod..")
 
             with open(f"{PARENT}/.currpod", "r") as file:
                 pod_name = file.readline().strip()
 
         if not pod_name:
-            print("No pod found")
-            pass
+            printerr("No pod found")
+            return
 
         run(["oc", "rsh", f"{pod_name}", "sh"])
 
@@ -119,7 +120,7 @@ class Commands:
                     host = ochost.readline().strip()
 
                 if not host:
-                    print("Host file is empty. Use 'set-host {HOST}' first")
+                    printalr("Host file is empty. Use 'set-host {HOST}' first")
 
                 with open(f"{PARENT}/.credentials", "r") as credentials:
                     username, password = credentials.readlines()
@@ -137,16 +138,16 @@ class Commands:
                 if process.returncode == 0:
                     self.envs = self.get_envs()
             else:
-                print("Missing host file. Use 'set-host {HOST}' first")
+                printerr("Missing host file. Use 'set-host {HOST}' first")
         except Exception as e:
-            print("An error occurred while logging in")
+            printerr("An error occurred while logging in")
             print(e)
 
     def do_logout(self):
         try:
-            print("Logging out...")
+            printinf("Logging out...")
             run(["oc", "logout"])
             exit()
         except Exception as e:
-            print("An error occurred while logging out")
+            printerr("An error occurred while logging out")
             print(e)

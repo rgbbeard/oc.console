@@ -1,5 +1,6 @@
 from inspect import getframeinfo, currentframe
 from typing import Optional, Any, Dict, List, Union
+from os import stat
 
 
 def _line():
@@ -35,3 +36,19 @@ def array_clear(
                     result.append(item)
 
     return result
+
+
+def printerr(message: str):
+    print(f"❌ {message}")
+
+
+def printinf(message: str):
+    print(f"ℹ️ {message}")
+
+
+def printalr(message: str):
+    print(f"⚠️ {message}")
+
+
+def printsuc(message: str):
+    print(f"✅ {message}")
