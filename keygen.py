@@ -17,12 +17,12 @@ class KeyGen:
 	__tag = None
 	__nonce = None
 
-	__KEYFILE: str = "./i.bin"
+	_keyfile: str = "./i.bin"
 
 	def __init__(self):
-		if isfile(self.__KEYFILE) and stat(self.__KEYFILE).st_size > 0:
+		if isfile(self._keyfile) and stat(self._keyfile).st_size > 0:
 			try:
-				with open(self.__KEYFILE, "rb") as c:
+				with open(self._keyfile, "rb") as c:
 					self.__key, self.__cipher, self.__tag, self.__nonce = c.readlines()
 
 			except Exception as e:
@@ -30,12 +30,11 @@ class KeyGen:
 		else:
 			self.generate_key(16)
 
-
 	def generate_key(self, bytes: int = 16):
 		tmp = get_random_bytes(bytes)
 		self.__key = tmp
 		
-		with open(self.__KEYFILE, "wb") as c:
+		with open(self._keyfile, "wb") as c:
 			c.write(tmp)
 
 	def decrypt(self, target: str):
