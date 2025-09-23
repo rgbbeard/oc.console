@@ -1,6 +1,9 @@
+#!/usr/bin/python
+
 from inspect import getframeinfo, currentframe
 from typing import Optional, Any, Dict, List, Union
-from os import stat
+from os import stat, system
+from re import sub
 
 
 def _line():
@@ -10,6 +13,12 @@ def _line():
 
 def is_not_empty_value(val: Any) -> bool:
     return val is not None and (val != "" or len(val) > 0)
+
+
+def sprintf(target: str, *replacements: Union[str, int, float]):
+    for x, r in enumerate(replacements):
+        target = sub(f"{{%{x}%}}", str(r), target)
+    return target
 
 
 def array_clear(
@@ -52,3 +61,35 @@ def printalr(message: str):
 
 def printsuc(message: str):
     print(f"✅ {message}")
+
+
+def try_install(module_name: str):
+    global modules
+
+    command = modules[module_name]["command"]
+
+    print(f"Executing {command}...\n")
+    try:
+        system(command)
+    except Exception as e:
+        printerr(e)
+        exit()
+
+    print("Restart the console to see the changes")
+    exit()
+
+
+def display_error_message(module_name: str):
+    global modules
+
+    url = modules[module_name]["url"]
+
+    printalr(f"Package {module_name} is required\n")
+
+    response = input("Would you like to install it now? (yes/no) ")
+    if "yes" == response:
+        try_install(module_name)
+    else:
+        print("See {url} for more details\n")
+    exit()
+

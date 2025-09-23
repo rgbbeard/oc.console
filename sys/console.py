@@ -15,7 +15,7 @@ POD_REGEX = r"([\w\/-]+):"
 POD_AND_FILE_REGEX = POD_REGEX + FILE_REGEX
 
 # load the Formatter class
-fmttr = OCDepsManager.module_from_path(f"{BASE}/formatter.py")
+fmttr = OCDepsManager.module_from_path(f"{PARENT}/formatter.py")
 Formatter = fmttr.Formatter
 
 # load the Commands class
@@ -150,7 +150,7 @@ class Console:
         pod_name: str = None, 
         since: str = "30m", 
         save_logs: bool = False,
-        search: Union[str, list] = None,
+        search: Union[str, list] = None, # Feature not yet implemented
         debug: bool = False
     ):
         if not since:

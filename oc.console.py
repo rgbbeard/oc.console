@@ -1,54 +1,45 @@
 #!/usr/bin/python
 
+from typing import Union
 from sys import argv
 from os import system
 from os.path import dirname
 from re import search, sub
-from typing import Union
 from shlex import split as parse_params
-from utilities import printerr, printinf, printsuc, printalr
+import json
 
-modules = {
-    "prompt_toolkit": {
-        "url": "https://pypi.org/project/prompt-toolkit/",
-        "command": "pip install prompt-toolkit"
-    },
-    "pynput": {
-        "url": "https://pypi.org/project/pynput/",
-        "command": "pip install pynput"
-    }
-}
+# program settings
+BASE = dirname(__file__)
 
+IS_CLONED = len(argv) > 1 and not (not argv[1]) and bool("--clone" == argv[1])
 
-def try_install(module_name: str):
-    command = modules[module_name]["command"]
+if IS_CLONED:
+    printinf("""THIS WINDOW IS RUNNING AS A CLONE, SOME COMMANDS WILL NOT BE AVAILABLE IN THIS MODE\n""")
 
-    print(f"Executing {command}...\n")
-    try:
-        system(command)
-    except Exception as e:
-        printerr(e)
-        exit()
+modules = {}
+with open(f"{BASE}/requirements.json", "r") as jsonmodules:
+    modules = json.load(jsonmodules)
 
-    print("Restart the console to see the changes")
-    exit()
+from utilities import (
+    printerr,
+    printinf,
+    printsuc,
+    printalr,
+    try_install,
+    display_error_message,
+    array_clear,
+    _line,
+    sprintf
+)
 
+from keygen import KeyGen
+from echo import Echo
 
-def display_error_message(module_name: str):
-    url = modules[module_name]["url"]
-
-    printalr(f"Package {module_name} is required\n")
-
-    response = input("Would you like to install it now? (yes/no) ")
-    if "yes" == response:
-        try_install(module_name)
-    else:
-        print("See {url} for more details\n")
-    exit()
-
-
+# install required modules
 try:
     from prompt_toolkit import PromptSession, prompt
+    from prompt_toolkit.styles import Style
+    from prompt_toolkit.formatted_text import HTML
     from prompt_toolkit.completion import WordCompleter
     from prompt_toolkit.history import FileHistory, InMemoryHistory
     from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
@@ -61,22 +52,13 @@ except ImportError as ie:
     display_error_message("pynput")
 
 from oc_deps_manager import OCDepsManager
-import utilities
-
-# program settings
-BASE = dirname(__file__)
-
-IS_CLONED = len(argv) > 1 and not (not argv[1]) and bool("--clone" == argv[1])
-
-if IS_CLONED:
-    printinf("""THIS WINDOW IS RUNNING AS A CLONE, SOME COMMANDS WILL NOT BE AVAILABLE IN THIS MODE\n""")
 
 # load the Console class
 cnsl = OCDepsManager.module_from_path(f"{BASE}/sys/console.py")
 Console = cnsl.Console
 
 # load the ThreadMaid class
-thdmd = OCDepsManager.module_from_path(f"{BASE}/sys/thread_maid.py")
+thdmd = OCDepsManager.module_from_path(f"{BASE}/thread_maid.py")
 ThreadMaid = thdmd.ThreadMaid
 
 console = Console()
@@ -88,7 +70,7 @@ if not Console.session_is_valid():
     console.commands.do_login()
 
 autocompletion = WordCompleter(console.call_manuel())
-history = FileHistory('.sesshstr')
+history = FileHistory(f"{BASE}/.sesshstr")
 
 # TODO: complete this feature
 # def detect_console_commands():
@@ -99,20 +81,31 @@ history = FileHistory('.sesshstr')
 
 
 def prompt(ppt):
-    global autocompletion, history
+    global autocompletion, history, prompt_style
 
-    session = PromptSession(completer=autocompletion, history=history)
+    session = PromptSession(
+        completer=autocompletion, 
+        history=history
+    )
 
     try:
         return session.prompt(ppt, auto_suggest=AutoSuggestFromHistory())
     except KeyboardInterrupt:
+        Echo.bash("Exiting", "yellow")
         exit()
     except EOFError:
+        Echo.bash("Unexpected error in prompt", "red")
         exit()
 
 
 while True:
-    cmd = prompt("oc.console $>")
+    cmd = prompt(
+        Echo.ansi(
+            "<ansiblue>{%0%}</ansiblue> <ansired>{%1%}</ansired>",
+            "oc.console",
+            "$>"
+        )
+    )
     cmd = cmd.strip()
     argsvalid = False
     args = []
@@ -125,7 +118,7 @@ while True:
             continue
 
         # remove extra spaces
-        args = utilities.array_clear(args)
+        args = array_clear(args)
 
         # the first element is always the command
         cmd = args.pop(0)
@@ -238,10 +231,10 @@ while True:
                             printerr("No filters passed")
 
                 console.get_logs(
-                    args[0], 
-                    since=since, 
-                    search=search_, 
-                    save_logs=save_logs, 
+                    args[0],
+                    since=since,
+                    search=search_,
+                    save_logs=save_logs,
                     debug=debug
                 )
             else:
@@ -256,16 +249,16 @@ while True:
                     if check:
                         console.do_upload(_from=args[0], _to=args[1])
                     else:
-                        printerr(f"Invalid command syntax :: {utilities._line()}")
+                        printerr(f"Invalid command syntax :: {_line()}")
                 elif len(args) == 3:
                     if check:
                         console.do_upload(
-                            pod_name=args[0], 
-                            _from=args[1], 
+                            pod_name=args[0],
+                            _from=args[1],
                             _to=args[2]
                         )
                     else:
-                        printerr(f"Invalid command syntax :: {utilities._line()}")
+                        printerr(f"Invalid command syntax :: {_line()}")
             else:
                 printerr(f"Command incomplete, please read the documentation for {cmd}")
 
@@ -278,16 +271,16 @@ while True:
                     if check:
                         console.do_download(_from=args[0], _to=args[1])
                     else:
-                        printerr(f"Invalid command syntax :: {utilities._line()}")
+                        printerr(f"Invalid command syntax :: {_line()}")
                 elif len(args) == 3:
                     if check:
                         console.do_download(
-                            pod_name=args[0], 
-                            _from=args[1], 
+                            pod_name=args[0],
+                            _from=args[1],
                             _to=args[2]
                         )
                     else:
-                        printerr(f"Invalid command syntax :: {utilities._line()}")
+                        printerr(f"Invalid command syntax :: {_line()}")
             else:
                 printerr(f"Command incomplete, please read the documentation for {cmd}")
 
@@ -300,7 +293,7 @@ while True:
                     if check:
                         console.do_pod2pod_transfer(args[0], args[1])
                     else:
-                        printerr(f"Invalid command syntax :: {utilities._line()}")
+                        printerr(f"Invalid command syntax :: {_line()}")
             else:
                 printerr(f"Command incomplete, please read the documentation for {cmd}")
         else:

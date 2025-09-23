@@ -1,7 +1,3 @@
-.idea/
-.ochost
-.sesshstr
-.currenv
-.currpod
-.credentials
 __pycache__/
+/.config.json
+/.sesshstr
