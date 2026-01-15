@@ -1,0 +1,58 @@
+"""REMINDER
+
+keeping this class
+for future implementations
+"""
+
+import base64
+from Crypto.Cipher import AES
+from os.path import isfile
+
+class Krypto:
+    def __init__(self, storage_file="i.bin"):
+        self._storage_file = storage_file
+        self._load_or_create_key()
+
+    def _load_or_create_key(self):
+        if isfile(self._storage_file):
+            with open(self._storage_file, "rb") as f:
+                self._key = f.read(16)
+        else:
+            from Crypto.Random import get_random_bytes
+            self._key = get_random_bytes(16)
+            with open(self._storage_file, "wb") as f:
+                f.write(self._key)
+
+    def pack_and_encrypt(self, plaintext: str) -> str:
+        """Encrypts data and bundles the nonce/tag into a single Base64 string."""
+        cipher = AES.new(self._key, AES.MODE_EAX)
+        ciphertext, tag = cipher.encrypt_and_digest(plaintext.encode())
+        
+        # Combine: Nonce (16) + Tag (16) + Secret Data
+        blob = cipher.nonce + tag + ciphertext
+        return base64.b64encode(blob).decode('utf-8')
+
+    def unpack_and_decrypt(self, b64_blob: str) -> str:
+        """Automatically extracts the nonce/tag and decrypts the data."""
+        raw_data = base64.b64decode(b64_blob)
+        
+        # Extract headers (first 32 bytes)
+        nonce = raw_data[:16]
+        tag = raw_data[16:32]
+        ciphertext = raw_data[32:]
+
+        cipher = AES.new(self._key, AES.MODE_EAX, nonce=nonce)
+        return cipher.decrypt_and_verify(ciphertext, tag).decode('utf-8')
+
+# --- Usage Example ---
+crypter = Krypto()
+
+# Each one of these creates a unique nonce/tag automatically
+enc_user = crypter.pack_and_encrypt("my_admin_user")
+enc_pass = crypter.pack_and_encrypt("SuperSecret123!")
+
+print(f"Stored Username: {enc_user}")
+print(f"Stored Password: {enc_pass}")
+
+# To get them back, you just pass the blob; the class "knows" what to do
+print(f"Decrypted: {crypter.unpack_and_decrypt(enc_user)}")

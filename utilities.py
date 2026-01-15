@@ -2,8 +2,14 @@
 
 from inspect import getframeinfo, currentframe
 from typing import Optional, Any, Dict, List, Union
-from os import stat, system
+from os import system
+from os.path import dirname, realpath
 from re import sub
+import json
+from oc_deps_manager import OCDepsManager
+
+BASE = dirname(__file__)
+REQSFILE = f"{BASE}/requirements.json"
 
 
 def _line():
@@ -11,8 +17,25 @@ def _line():
     return info[1]
 
 
-def is_not_empty_value(val: Any) -> bool:
-    return val is not None and (val != "" or len(val) > 0)
+def get_path(from_filename: str, path_format: str = "unix"):
+    curdir = ""
+
+    if path_format == "unix":
+        curdir = realpath(from_filename).replace("\\", "/")
+        curdir = curdir.split("/")
+        curdir.pop()
+        curdir = "/".join(curdir)
+
+    elif path_format in ("nt", "windows", "win"):
+        curdir = curdir.split("\\")
+        curdir.pop()
+        curdir = "\\".join(curdir)
+
+    return curdir
+
+
+def is_empty(val: Any) -> bool:
+    return val is None or val == "" or len(val) == 0
 
 
 def sprintf(target: str, *replacements: Union[str, int, float]):
@@ -37,7 +60,7 @@ def array_clear(
             raise TypeError("Input must be a dict or list")
 
         for index, value in iterator:
-            if (check_values and is_not_empty_value(value)) or (not check_values and index):
+            if (check_values and not is_empty(value)) or (not check_values and index):
                 item = value if check_values else index
                 if maintain_index:
                     result[index] = item
@@ -48,48 +71,61 @@ def array_clear(
 
 
 def printerr(message: str):
-    print(f"❌ {message}")
+    print(f"\n❌  {message}")
 
 
 def printinf(message: str):
-    print(f"ℹ️ {message}")
+    print(f"\nℹ️  {message}")
 
 
 def printalr(message: str):
-    print(f"⚠️ {message}")
+    print(f"\n⚠️  {message}")
 
 
 def printsuc(message: str):
-    print(f"✅ {message}")
+    print(f"\n✅  {message}")
+
+
+def get_requirements():
+    global REQSFILE
+
+    reqs = {}
+
+    with open(REQSFILE, "r") as data:
+        reqs = json.load(data)
+
+    return reqs
 
 
 def try_install(module_name: str):
-    global modules
+    reqs = get_requirements()
 
-    command = modules[module_name]["command"]
+    command = reqs[module_name]["command"]
 
     print(f"Executing {command}...\n")
     try:
         system(command)
     except Exception as e:
-        printerr(e)
+        printerr(str(e))
         exit()
 
     print("Restart the console to see the changes")
     exit()
 
 
-def display_error_message(module_name: str):
-    global modules
+def import_module_error(module_name: str):
+    reqs = get_requirements()
 
-    url = modules[module_name]["url"]
+    url = reqs[module_name]["url"]
 
     printalr(f"Package {module_name} is required\n")
 
     response = input("Would you like to install it now? (yes/no) ")
-    if "yes" == response:
+    response = response.strip().lower()
+
+    if response.startsWith("y"):
         try_install(module_name)
-    else:
-        print("See {url} for more details\n")
+    elif response.startsWith("n"):
+        print(f"See {url} for more details\n")
     exit()
 

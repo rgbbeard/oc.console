@@ -4,7 +4,7 @@ import importlib.util as util
 
 
 class OCDepsManager:
-	__class_name: str = None
+	_class_name: str = None
 
 	def __init__(self):
 		pass

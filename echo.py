@@ -1,11 +1,11 @@
 #!/usr/bin/python
 from re import sub
-from utilities import display_error_message, sprintf
+from utilities import import_module_error, sprintf
 
 try:
     from prompt_toolkit.formatted_text import HTML
 except ImportError as ie:
-    display_error_message("prompt_toolkit")
+    import_module_error("prompt_toolkit")
 
 
 class Echo:

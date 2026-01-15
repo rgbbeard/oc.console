@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import threading
-from ctypes import (pythonapi, py_object)
+from ctypes import pythonapi, py_object
 
 
 class ThreadMaid:

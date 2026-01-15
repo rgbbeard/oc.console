@@ -1,136 +1,292 @@
 #!/usr/bin/python
 
-from subprocess import Popen, run, PIPE, CalledProcessError
+from typing import Union
+from subprocess import run
 from os.path import dirname, isfile, isdir, exists
 from os import symlink, unlink, makedirs
-from typing import Union
 from re import search, sub
+from base64 import b64encode, b64decode
 from oc_deps_manager import OCDepsManager
-from utilities import printerr, printinf, printsuc, printalr
+from utilities import (
+    printerr, 
+    printinf, 
+    printsuc, 
+    printalr, 
+    is_empty,
+    is_empty
+)
+from echo import Echo
 
 BASE = dirname(__file__)
 PARENT = f"{BASE}/.."
+
 FILE_REGEX = r"([\w\/-]+)(\.[\w]{1,5})*"
 POD_REGEX = r"([\w\/-]+):"
 POD_AND_FILE_REGEX = POD_REGEX + FILE_REGEX
 
-# load the Formatter class
-fmttr = OCDepsManager.module_from_path(f"{PARENT}/formatter.py")
-Formatter = fmttr.Formatter
+CFGFILE = f"{PARENT}/config.json"
 
-# load the Commands class
-cmds = OCDepsManager.module_from_path(f"{BASE}/commands.py")
-Commands = cmds.Commands
+SESSION_HISTORY = f"{PARENT}/.sesshstr"
+
+# load the OpenShift class
+cmds = OCDepsManager.module_from_path(f"{BASE}/openshift.py")
+OpenShift = cmds.OpenShift
+
+# load the json manager class
+jsm = OCDepsManager.module_from_path(f"{PARENT}/json_maid.py")
+JSONMaid = jsm.JSONMaid
+
+# load the json manager class
+kt = OCDepsManager.module_from_path(f"{PARENT}/krypto.py")
+Krypto = kt.Krypto
 
 
 class Console:
-    commands: Commands = None
+    _default_dirmode = 0o777
+    oc: OpenShift = None
+    jsm: JSONMaid = None
+    kt: Krypto = None
+    cfg = dict()
 
-    __manuel: dict = {
-        "help": """Displays details about this program.
-            You can also use `help {command}` to get more information on a specific command.
+    _manuel: dict = {
+        "help": """
+            Displays general help for the console 
+            or the manual for a specific command. 
+            This command has aliases **manuel** and **manuel!**.
+
+            **Usage:**
+                * `help`
+                * `help <command_name>`
+
+            **Arguments:**
+                * **<command_name>**: Optional. 
+                The specific command to get help for.
         """,
-        "manuel": "Alias of help",
-        "manuel!": "Alias of help",
-        "login": """Log into OpenShift using your credentials.
-            A `.host` file with the host address is required. Use `set-host` to create it.
+        "clear": """
+            Clears the console screen. This command has the alias **cls**.
+
+            **Usage:**
+                * `clear`
         """,
-        "logout": "Logout from your account/end current session",
-        "set-credentials": """Save your login credentials.
-            This command requires the path to the file containing the login credentials.
-            The file should contain only the username and password, each on a separate line.
+        "exit": """
+            Exits the console application.
 
-            Usage:
-                set-credentials /path/to/credentials.txt
+            **Usage:**
+                * `exit`
         """,
-        "set-credentials-path": "Alias of set-credentials.",
-        "set-host": """Save the host to login to.
+        "reload-config": """
+            Reloads the configuration file into the console, 
+            refreshing all stored settings.
 
-            Usage:
-                set-host http(s)://domain.example
+            **Usage:**
+                * `reload-config`
         """,
-        "currhost": "Displays the host that's currently in use.",
-        "host?": "Alias of currhost.",
-        "host": "Alias of currhost.",
-        "find": "Find a pod by full or partial name.",
-        "ls": "Alias of find.",
-        "logs": """Displays the logs for the requested pod.
+        "show": """
+            Displays various configurations or settings.
 
-            Usage:
-                logs {pod-name} [--debug] [--save-logs] [--since 1h2m3s] [--search filter1 filter2 ...]
+            **Usage:**
+                * `show config all`
+                * `show config <key1> [<key2> ...]`
 
-            Notes:
-                --since defaults to 30m if not provided.
-                --search must be used at the end.
-                --save-logs is currently disabled.
+            **Arguments:**
+                * **config**: Keyword to indicate configuration values are requested.
+                * **all**: Subcommand for 'config'. 
+                Displays all available configuration values.
+                * **<key1> [<key2> ...]**: Subcommands for 'config'. 
+                Displays the values for the specified configuration keys.
         """,
-        "enter": """Enter the pod's console.
+        "set": """
+            Sets configuration parameters (host, credentials) 
+            or the working environment.
 
-            Usage:
-                enter pod-name
+            **Usage:**
+                * `set host <value>`
+                * `set credentials <value>`
+                * `set env <value>`
 
-            Notes:
-                The accessed pod is saved inside the `.currpod` file.
+            **Arguments:**
+                * **host <value>**: Sets the host configuration.
+                * **credentials <value>**: Sets the credentials configuration.
+                * **env <value>**: Sets the working environment (e.g., namespace).
         """,
-        "envs": "List all available OpenShift projects (requires `oc projects` or `login`).",
-        "use-env": """Switch to the requested OpenShift project.
+        "login": """
+            Authenticates the user using the configured host and credentials.
 
-            Usage:
-                use-env project-name
-
-            Notes:
-                Automatically detects work environment if name ends with `dev` or `prod`.
+            **Usage:**
+                * `login`
         """,
-        "currenv": "Displays the current work environment.",
-        "env?": "Alias of currenv.",
-        "env": "Alias of currenv.",
-        "upload": """Uploads a file to a pod.
+        "logout": """
+            Invalidates the current session and logs the user out.
 
-            Method 1:
-                upload /path/to/source/file /path/to/destination/folder
-
-            Method 2:
-                upload pod-name /path/to/source/file /path/to/destination/folder
-
-            Notes:
-                If pod is not specified, the `.currpod` file will be used.
+            **Usage:**
+                * `logout`
         """,
-        "download": """Downloads a file from a pod.
+        "envs": """
+            Lists all available environments (namespaces/contexts). 
+            This command has the alias **envs?**.
 
-            Method 1:
-                download /path/to/source/file /path/to/destination/folder
-
-            Method 2:
-                download pod-name /path/to/source/file /path/to/destination/folder
-
-            Notes:
-                If pod is not specified, the `.currpod` file will be used.
+            **Usage:**
+                * `envs`
         """,
-        "upload-pod2pod": """Copy a file from one pod to another.
+        "ls": """
+            Lists all available pods. This command has the alias **pods**.
 
-            Usage:
-                upload-pod2pod pod1:/path/to/file pod2:/path/to/destination/
+            **Usage:**
+                * `ls`
+        """,
+        "find": """
+            Searches for and displays information about a specific pod.
+
+            **Usage:**
+                * `find <pod_name>`
+
+            **Arguments:**
+                * **<pod_name>**: The name of the pod to find.
+        """,
+        "enter": """
+            Spawns a bash shell inside the specified pod.
+
+            **Usage:**
+                * `enter <pod_name>`
+
+            **Arguments:**
+                * **<pod_name>**: The name of the target pod.
+        """,
+        "logs": """
+            Displays the logs for a specified pod, 
+            with optional filtering and saving.
+
+            **Usage:**
+                * `logs <pod_name>`
+                * `logs <pod_name> 
+                    [--since <duration>] 
+                    [--search <filter>] 
+                    [--save-logs] 
+                    [--debug]`
+
+            **Arguments:**
+                * **<pod_name>**: The name of the target pod.
+                * **--since <duration>**: Optional. 
+                Show logs since a relative duration (e.g., '1h24m10s').
+                * **--search <filter>**: Optional. 
+                Filter logs based on search terms (supports multiple terms).
+                * **--save-logs**: Optional. 
+                Flag to save the retrieved logs.
+                * **--debug**: Optional. 
+                Flag to enable debug logging.
+        """,
+        "upload": """
+            Uploads a file from the local machine to a specified path inside a pod.
+
+            **Usage:**
+                * `upload <local_path> <remote_path>` 
+                (Assumes a default/current pod context)
+                * `upload <pod_name> <local_path> <remote_path>`
+
+            **Arguments:**
+                * **<pod_name>**: Optional. 
+                The name of the target pod.
+                * **<local_path>**: The path to the file on the local machine.
+                * **<remote_path>**: The path to the destination inside the pod.
+        """,
+        "download": """
+            Downloads a file from a specified path inside a pod to the local machine.
+
+            **Usage:**
+                * `download <remote_path> <local_path>` 
+                (Assumes a default/current pod context)
+                * `download <pod_name> <remote_path> <local_path>`
+
+            **Arguments:**
+                * **<pod_name>**: Optional. The name of the source pod.
+                * **<remote_path>**: The path to the file inside the pod.
+                * **<local_path>**: The path to the destination on the local machine.
+        """,
+        "upload-pod2pod": """
+            Transfers a file between two different pods.
+
+            **Usage:**
+                * `upload-pod2pod <source_pod> <destination_pod>`
+
+            **Arguments:**
+                * **<source_pod>**: The name of the pod to copy the file 
+                from (and likely the path within it).
+                * **<destination_pod>**: The name of the pod to copy the file 
+                to (and likely the path within it).
         """
     }
-    __default_dirmode = 0o777
 
     def __init__(self):
-        self.commands = Commands()
+        self.oc = OpenShift()
+        self.jsm = JSONMaid(CFGFILE)
+        self.kt = Krypto()
+
+        cfg = self.get_config()
+        self.cfg = cfg
+
+        if is_empty(cfg.get("host", "")):
+            print("No host found")
+
+            try:
+                done = False
+                host: str = ""
+
+                while not done:
+                    host = input("Enter host: ")
+                    if not is_empty(host):
+                        host = self.kt.encrypt(host.strip())
+                        host = b64encode(host).decode('utf-8')
+
+                    done = not is_empty(host)
+
+                cfg["host"] = host
+            except KeyboardInterrupt as ki:
+                printerr("Setup aborted")
+                exit()
+            except Exception as e:
+                print(e)
+
+        if is_empty(cfg.get("credentials", "")):
+            print("No credentials found")
+
+            try:
+                done = False
+                username: str = ""
+                password: str = ""
+
+                while not done:
+                    username = input("Enter username: ")
+                    if not is_empty(username):
+                        username = self.kt.encrypt(username.strip())
+                        username = b64encode(username).decode('utf-8')
+
+                        password = input("Enter password: ")
+                        if not is_empty(password):
+                            password = self.kt.encrypt(password.strip())
+                            password = b64encode(password).decode('utf-8')
+
+                    done = not is_empty(username) and not is_empty(password)
+
+                cfg["credentials"] = [username, password]
+            except KeyboardInterrupt as ki:
+                printerr("Setup aborted")
+                exit()
+            except Exception as e:
+                print(e)
+
+        self.save_and_reload(cfg)
+
+    def save_and_reload(self, data: dict):
+        self.jsm.update_record(self.cfg, data)
+        self.cfg = self.get_config()
 
     def call_manuel(self):
-        return self.__manuel.keys()
-
-    @staticmethod
-    def session_is_valid() -> bool:
-        # oc whoami
-        process = Popen(["oc", "whoami"], stdin=PIPE, stderr=PIPE, stdout=PIPE)
-        output, error = process.communicate()
-
-        message = output.decode().splitlines()
-        return not (not message) and "Error" not in message[0]
+        return self._manuel.keys()
 
     def save_history(self, cmd, args, argsvalid):
-        with open(f"{PARENT}/.sesshstr", "a") as history:
+        global SESSION_HISTORY
+
+        with open(SESSION_HISTORY, "a") as history:
             row = "\n"
 
             if not argsvalid:
@@ -140,83 +296,232 @@ class Console:
 
             history.write(row)
 
-    def get_help_for(self, cmd: str = ""):
-        if not (not cmd) and self.__manuel.get(cmd):
-            print(f"Manual for {cmd}:")
-            print(self.__manuel.get(cmd))
+    def delete_history(self) -> bool:
+        global SESSION_HISTORY
 
-    def get_logs(
-        self, 
-        pod_name: str = None, 
-        since: str = "30m", 
-        save_logs: bool = False,
-        search: Union[str, list] = None, # Feature not yet implemented
-        debug: bool = False
-    ):
-        if not since:
-            since = "30m"
-        
-        # Ensure pod_name is valid
-        if pod_name and self.__is_pod(pod_name):
-            cmd = ["stern", pod_name, "--since", since]
+        try:
+            with open(SESSION_HISTORY, "w") as history:
+                history.write("")
+
+            return True
+        except FileNotFoundError as e:
+            printerr("Unable to clear commands history")
+            print(e)
             
-            # Debug output
-            if debug:
-                print(
-                    f"Query: {' '.join(cmd)}\n",
-                    "Params:\n",
-                    f"pod_name: {pod_name}\n",
-                    f"since: {since}\n",
-                    f"save_logs: {save_logs}\n",
-                    f"search: {[type(search), search]}\n"
-                )
-                pass
+            return False
 
-            try:
-                process = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=False)
-                output = process.stdout
+    def _save_env(self, e: str):
+        if "dev" in e:
+            env = f"{e} (DEVELOPMENT)"
+        elif "preprod" in e or "test" in e:
+            env = f"{e} (TEST)"
+        elif "prod" in e:
+            env = f"{e} (PRODUCTION)"
 
-                # filter with one or more keywords
-                if search is not None and (isinstance(search, str) or len(search) > 0):
-                    for line in output:
-                        line = line.decode('utf-8').strip()
+        cfg = self.get_config()
+        cfg["namespace"] = env
+        self.save_and_reload(cfg)
 
-                        if isinstance(search, str):
-                            if search in line:
-                                print(Formatter.format_log(line))
+        return True
 
-                        # filter by multiple keywords   
-                        elif isinstance(search, list):
-                            if all(keyword in line for keyword in search):
-                                print(Formatter.format_log(line))
-                else:
-                    # Output the logs directly if no search filter
-                    for line in process.stdout:
-                        l = line.decode('utf-8').strip()
-                        print(Formatter.format_log(l))
-            except CalledProcessError as e:
-                printerr(f"Error occurred: {e}")
-            except KeyboardInterrupt:
-                print("\n\nOkay, bye!")
+    # -------------------------
+    # SETTERS
+    # -------------------------
+    def set_credentials(self, username: str, password: str):
+        if not is_empty(username):
+            username = self.kt.encrypt(username.strip())
+            username = b64encode(username).decode('utf-8')
         else:
-            print("Invalid pod name")
+            printerr("The given username is not valid")
+            return False
 
-    def __is_pod(self, pod_name: str = "") -> bool:
-        pods = self.commands.get_pods_list()
+        if not is_empty(password):
+            password = self.kt.encrypt(password.strip())
+            password = b64encode(password).decode('utf-8')
+        else:
+            printerr("The given password is not valid")
+            return False
 
-        for pod in pods:
-            if pod_name in pod:
-                return True
-        return False
+        cfg = self.get_config()
+        cfg["credentials"] = [username, password]
+        self.save_and_reload(cfg)
+
+        return True
+
+    def set_username(self, username: str):
+        if not is_empty(username):
+            username = self.kt.encrypt(username.strip())
+            username = b64encode(username).decode('utf-8')
+        else:
+            printerr("The given username is not valid")
+            return False
+
+        cfg = self.get_config()
+        cfg["credentials"][0] = username
+        self.save_and_reload(cfg)
+
+        return True
+
+    def set_password(self, password: str):
+        if not is_empty(password):
+            password = self.kt.encrypt(password.strip())
+            password = b64encode(password).decode('utf-8')
+        else:
+            printerr("The given password is not valid")
+            return False
+
+        cfg = self.get_config()
+        cfg["credentials"][1] = password
+        self.save_and_reload(cfg)
+        
+        return True
+
+    def set_host(self, host: str):
+        if not is_empty(host):
+            host = self.kt.encrypt(host.strip())
+            host = b64encode(host).decode('utf-8')
+        else:
+            printerr("The given host name is not valid")
+            return False
+
+        cfg = self.get_config()
+        cfg["host"] = host
+        self.save_and_reload(cfg)
+        
+        return True
+
+    def set_namespace(self, e: str):
+        if is_empty(e):
+            printerr("No environment passed")
+            return False
+
+        if is_empty(self.oc.envs):
+            printalr("No environments found, try logging in first")
+            return False
+
+        e = e.strip()
+
+        if e in self.oc.envs:
+            self.oc.set_env(e)
+
+            self._save_env(e)
+        else:
+            printerr("Environment not found")
+            print("Use 'envs' to show the available environments")
+            return False
+        
+        return True
+
+    # -------------------------
+    # GETTERS
+    # -------------------------
+    def get_help_for(self, cmd: str = ""):
+        if not is_empty(cmd) and self._manuel.get(cmd):
+            print(f"Manual for {cmd}:")
+            print(self._manuel.get(cmd))
+        else:
+            print("Manual for oc.console\n\n")
+            for key in self._manuel:
+                value = self._manuel.get(key)
+
+                print(f"{key}: {value}\n")
+    
+    def get_config(self):
+        try:
+            return self.jsm.get_record(0)
+        except Exception as e:
+            raise e
+
+    def show_config(self, args):
+        config = self.get_config()
+
+        if args[0] == "all":
+            printinf("Current configuration is:")
+
+            for a in config:
+                v = config.get(a)
+
+                printstr = f"Parameter {a} is: "
+
+                if isinstance(v, list):
+                    for b in v:
+                        bd = self.get_cleanvalue(b)
+
+                        if bd is None:
+                            print(printstr + bd)
+                        else:
+                            print(printstr + b)
+                else:
+                    v = self.get_cleanvalue(v)
+
+                    if v is None:
+                        v = config.get(a)
+
+                    print(printstr + v)
+
+        # Specific values
+        else:
+            for a in args[0:]:
+                if a in config:
+                    printinf("Showing configuration for {a}:")
+
+                    v = config.get(a)
+
+                    if isinstance(v, list):
+                        for b in v:
+                            bd = self.get_cleanvalue(b)
+
+                            if bd is None:
+                                print(bd)
+                            else:
+                                print(b)
+                    else:
+                        v = self.get_cleanvalue(v)
+
+                        if v is None:
+                            v = config.get(a)
+
+                        print(v)
+
+    def get_cleanvalue(self, data) -> Union[str, None]:
+        try:
+            d = b64decode(data)
+            return self.kt.decrypt(d).decode('utf-8')
+        except Exception:
+            return None
+
+    def get_currhost(self) -> Union[str, None]:
+        return self.get_cleanvalue(self.get_config()["host"])
+
+    def get_user(self) -> Union[str, None]:
+        return self.get_cleanvalue(self.get_config()["credentials"][0])
+
+    def get_pasw(self) -> Union[str, None]:
+        return self.get_cleanvalue(self.get_config()["credentials"][1])
+
+    def get_currpod(self) -> Union[str, None]:
+        return self.get_config()["pod"]
+
+    def get_currns(self) -> Union[str, None]:
+        ns = self.get_config()["namespace"]
+
+        if ns is not None:
+            printinf(f"Currently using namespace: {ns}")
+        else:
+            printint("No specific namespace used recently")
 
     def get_pods(self):
-        pods = self.commands.get_pods_list()
+        pods = self.oc.get_pods_list()
 
         for pod in pods:
             print(pod)
 
-    def get_pod(self, pod_name: str = ""):
-        pods = self.commands.get_pods_list()
+    def get_pod(self, pod_name: str):
+        if is_empty(pod_name):
+            printalr("No pod name specified")
+            return
+
+        pods = self.oc.get_pods_list()
 
         tmp = []
 
@@ -230,136 +535,129 @@ class Console:
         if not pods:
             printalr("No pod found.")
 
-    def set_credentials_path(self, credentials_path: str = ""):
-        print("Now checking the path you entered...")
-
-        if isfile(credentials_path):
-            printinf("The file you provided is valid!")
-            print("Saving credentials...")
-
-            self.__create_link(credentials_path)
-
-            print("Done")
-
-            self.commands.do_login()
-        else:            
-            printerr("The provided file is not valid")
-
-    def __create_link(self, credentials_path: str = ""):
-        try:
-            symlink(credentials_path, f"{BASE}/.credentials")
-        except FileExistsError:
-            printalr("Configuration file already exists")
-            unlink(f"{PARENT}/.credentials")
-            self.__create_link(credentials_path)
-
-    def set_host(self, host_name: str = ""):
-        if not (not host_name):
-            with open(f"{PARENT}/.ochost", "w") as file:
-                file.write(host_name)
-        else:
-            printerr("The given host name is not valid")
-
-    def get_host(self):
-        if isfile(f"{PARENT}/.ochost"):
-            with open(f"{PARENT}/.ochost", "r") as file:
-                print(f"Currently using host: {file.readline()}")
-        else:
-            printerr("Missing host file. Use 'set-host {HOST}' first")
-
     def get_envs(self):
-        for c in self.commands.get_envs():
+        for c in self.oc.get_envs():
             print(c)
 
-    def get_currpod(self):
-        with open(f"{PARENT}/.currpod", "r") as currpod:
-            return currpod.readline()
+    def get_currenv(self) -> Union[str, None]:
+        env = self.get_config()["env"]
 
-    def do_upload(
-        self, 
-        _from: str, 
-        _to: str, 
-        pod_name: str = "default"
-    ):
+        if env is not None:
+            printinf(f"Currently using environment: {env}")
+        else:
+            printint("Couldn't detect any recently used environment")
+
+    # -------------------------
+    # ACTIONS
+    # -------------------------
+    def spawn_bash(self, pod_name: str = "default"):
+        try:
+            if pod_name == "default":
+                    pod_name = self.get_currpod()
+
+            if is_empty(pod_name):
+                printalr("No pod specified, looking for the last accessed pod..")
+
+                pod_name = self.get_currpod()
+
+
+            if is_empty(pod_name):
+                printerr("No pod found")
+                return
+
+            self.oc.start_session(pod_name)
+        except Exception:
+            printerr(f"An unexpected error occurred while accessing pod {pod_name}")
+
+    def do_upload(self, _from: str, _to: str, pod_name: str = "default"):
         try:
             if pod_name == "default":
                 pod_name = self.get_currpod()
 
             if not pod_name:
-                printerr("No valid pod to upload to.\nPlease specify one")
-                return
+                printerr("No valid pod to upload to.")
+                print("Please specify one")
+                return False
 
             printinf(f"Now uploading: {_from}...\n")
             run(["oc", "cp", _from, f"{pod_name}:{_to}"])
         except Exception as e:
-            printerr(e)
+            printerr(str(e))
+            return False
         finally:
             printsuc("Process completed\n\n")
+            return True
 
-    def do_download(
-        self, 
-        _from: str, 
-        _to: str, 
-        pod_name: str = "default"
-    ):
+    def do_download(self, _from: str, _to: str, pod_name: str = "default"):
         try:
             if pod_name == "default":
                 pod_name = self.get_currpod()
 
             if not pod_name:
-                printerr("No valid pod to download from.\nPlease specify one")
-                return
+                printerr("No valid pod to download from.")
+                print("Please specify one")
+                return False
 
-            # validating destination
+            # Validating destination
             if not exists(_to):
                 printalr("The destination does not exist")
 
                 try:
                     printinf("Creating destination directory")
-                    makedirs(_to, self.__default_dirmode)
+                    makedirs(_to, self._default_dirmode)
 
                 except Exception:
                     printerr("Failed to create destination directory")
-                    return
+                    return False
 
             if not isdir(_to):
                 printerr("The destination isn't a directory")
-                return
+                return False
 
             printinf(f"Now downloading: {_from} to {_to}...\n")
             run(["oc", "rsync", f"{pod_name}:{_from}", _to])
         except Exception as e:
             printerr(e)
+            return False
         finally:
             printsuc("Process completed\n\n")
+            return True
 
     def do_pod2pod_transfer(self, _from: str, _to: str):
         printinf(f"Starting transfer from {_from} to {_to}")
+
         pod1 = search(POD_REGEX, _from).group(0).replace(":", "")
         pod2 = search(POD_REGEX, _to).group(0).replace(":", "")
 
         path1 = sub(POD_REGEX, "", _from)
-        # extract filename
+
+        # Extract filename
         file1 = path1.split("/")[-1]
         path2 = sub(POD_REGEX, "", _to)
 
-        print(f"Downloading {_from} locally...\n")
-        """ example usage:
-                upload-pod2pod --from pod-name-1:/path/to/file.php --to pod-name-2:/path/to/destination/
+        printinf(f"Downloading {_from} locally...\n")
+        """ Example usage:
+
+        upload-pod2pod --from pod-name-1:/path/to/file.php --to pod-name-2:/path/to/destination/
         """
         self.do_download(path1, ".", pod1)
-        print(f"Uploading {_from} to {_to}...\n")
+        printinf(f"Uploading {_from} to {_to}...\n")
         self.do_upload(file1, path2, pod2)
 
-        # deleting the downloaded file
+        # Deleting the downloaded file
         try:
-            print("Deleting locally downloaded files...")
+            printinf("Deleting locally downloaded files...")
             unlink(file1)
         except FileNotFoundError:
-            printerr(f"File not found: {file1}.\nMaybe it wasn't downloaded?")
+            printerr(f"File not found: {file1}.")
+            print("Was it downloaded beforehand?")
+            return False
         finally:
             printsuc("Process completed\n\n")
+            return True
 
+    
+    # Arguments validation for download and upload
     def verify_xload_args(
         self, 
         args: list, 
@@ -367,12 +665,18 @@ class Console:
         xload_type: int
     ) -> bool:
         valid = False
-        pods = self.commands.get_pods_list()
+        pods = self.oc.get_pods_list()
 
-        # upload and download
+        # upload = 1
+        # download = 2
         if xload_type == 1 or xload_type == 2:
+            """Expecting paths only
+
+            Uses the last accessed pod
+
+            see: config.json
+            """
             if argslen == 2:
-                # expecting paths only
                 for a in args:
                     file = search(FILE_REGEX, a)
 
@@ -381,13 +685,15 @@ class Console:
                     elif not file.group(0):
                         valid = False
                 valid = True
+
+            # Expecting the pod name as first parameter
             elif argslen == 3:
-                # expecting the pod name as first parameter
                 if args[0] in pods:
-                    # expected syntax: /path/to/file for both parameters
-                    """ examples:
-                            /upload/path/to/file.pdf
-                            /upload/path/to/file.tar.gz.zip
+                    """Expected syntax: /path/to/file for both parameters
+
+                    Examples:
+                        /upload/path/to/file.pdf
+                        /upload/path/to/file.tar.gz.zip
                     """
                     file1 = search(FILE_REGEX, args[1])
                     file2 = search(FILE_REGEX, args[2])
@@ -396,8 +702,9 @@ class Console:
         # upload-pod2pod
         elif xload_type == 3:
             if argslen == 2:
-                # expected syntax: pod_name:/path/to/file for both parameters
-                """ examples:
+                """Expected syntax: pod_name:/path/to/file for both parameters
+
+                Examples:
                         pod-name-randnum1234155:/upload/path/to/file.pdf
                         pod-name-randnum1234155:/upload/path/to/file.tar.gz.zip
                 """
@@ -406,4 +713,5 @@ class Console:
 
                 if pod1.group(0) in pods and pod2.group(0) in pods:
                     valid = True
+
         return valid
