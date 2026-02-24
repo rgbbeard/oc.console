@@ -50,169 +50,139 @@ class Console:
 
     _manuel: dict = {
         "help": """
-            Displays general help for the console 
-            or the manual for a specific command. 
-            This command has aliases **manuel** and **manuel!**.
+            Displays general help for the console or the manual for a specific command. 
+            Aliases: **manuel**, **manuel!**
 
             **Usage:**
                 * `help`
                 * `help <command_name>`
 
             **Arguments:**
-                * **<command_name>**: Optional. 
-                The specific command to get help for.
+                * **<command_name>**: Optional. The command to explain.
         """,
         "clear": """
-            Clears the console screen. This command has the alias **cls**.
+            Clears the terminal screen.
+            Aliases: **cls**
 
             **Usage:**
                 * `clear`
         """,
-        "exit": """
-            Exits the console application.
+        "purge": """
+            Deletes stored data based on the argument provided.
 
             **Usage:**
-                * `exit`
+                * `purge history`
+
+            **Arguments:**
+                * **history**: Clears the command history file.
         """,
         "reload-config": """
-            Reloads the configuration file into the console, 
-            refreshing all stored settings.
+            Reloads the configuration file and refreshes global settings.
 
             **Usage:**
                 * `reload-config`
         """,
         "show": """
-            Displays various configurations or settings.
+            Displays connection details or resource explanations.
 
             **Usage:**
-                * `show config all`
-                * `show config <key1> [<key2> ...]`
+                * `show config`
+                * `show config <key>`
+                * `show pod` (In Development)
 
             **Arguments:**
-                * **config**: Keyword to indicate configuration values are requested.
-                * **all**: Subcommand for 'config'. 
-                Displays all available configuration values.
-                * **<key1> [<key2> ...]**: Subcommands for 'config'. 
-                Displays the values for the specified configuration keys.
+                * **config**: Shows the current configuration.
+                * **pod**: Explains pod details (currently a placeholder).
         """,
         "set": """
-            Sets configuration parameters (host, credentials) 
-            or the working environment.
+            Updates configuration parameters or the working environment.
 
             **Usage:**
                 * `set host <value>`
-                * `set credentials <value>`
-                * `set env <value>`
+                * `set credentials <user> <password>`
+                * **Aliases for credentials**: `username`, `password`
+                * `set namespace <value>` (Alias: **env**)
 
             **Arguments:**
-                * **host <value>**: Sets the host configuration.
-                * **credentials <value>**: Sets the credentials configuration.
-                * **env <value>**: Sets the working environment (e.g., namespace).
+                * **host**: The target server URL.
+                * **namespace**: The target environment/namespace.
         """,
         "login": """
-            Authenticates the user using the configured host and credentials.
+            Authenticates the user using current host and credentials and fetches environments.
 
             **Usage:**
                 * `login`
         """,
         "logout": """
             Invalidates the current session and logs the user out.
+            Aliases: **exit**
 
             **Usage:**
                 * `logout`
         """,
+        "status": """
+            Checks the current connection and user authentication status.
+
+            **Usage:**
+                * `status`
+        """,
         "envs": """
-            Lists all available environments (namespaces/contexts). 
-            This command has the alias **envs?**.
+            Lists all available namespaces/environments.
+            Aliases: **envs?**, **namespaces**
 
             **Usage:**
                 * `envs`
         """,
         "ls": """
-            Lists all available pods. This command has the alias **pods**.
+            Lists all available pods in the current namespace.
+            Aliases: **pods**
 
             **Usage:**
                 * `ls`
         """,
         "find": """
-            Searches for and displays information about a specific pod.
+            Searches for a specific pod by name.
 
             **Usage:**
                 * `find <pod_name>`
-
-            **Arguments:**
-                * **<pod_name>**: The name of the pod to find.
         """,
         "enter": """
-            Spawns a bash shell inside the specified pod.
+            Starts an interactive bash session inside the requested pod.
 
             **Usage:**
                 * `enter <pod_name>`
-
-            **Arguments:**
-                * **<pod_name>**: The name of the target pod.
         """,
         "logs": """
-            Displays the logs for a specified pod, 
-            with optional filtering and saving.
+            Streams logs from a pod. Uses 'stern' notation and supports JSON formatting.
 
             **Usage:**
-                * `logs <pod_name>`
-                * `logs <pod_name> 
-                    [--since <duration>] 
-                    [--search <filter>] 
-                    [--save-logs] 
-                    [--debug]`
+                * `logs <pod_name> [options]`
 
-            **Arguments:**
-                * **<pod_name>**: The name of the target pod.
-                * **--since <duration>**: Optional. 
-                Show logs since a relative duration (e.g., '1h24m10s').
-                * **--search <filter>**: Optional. 
-                Filter logs based on search terms (supports multiple terms).
-                * **--save-logs**: Optional. 
-                Flag to save the retrieved logs.
-                * **--debug**: Optional. 
-                Flag to enable debug logging.
+            **Options:**
+                * `--since`, `-t`: Duration (e.g., 1h24m10s).
+                * `--search`, `-R`: Filter terms.
+                * `--save-logs`, `>`: Save output to a file.
+                * `--debug`, `-D`: Enable debug mode.
         """,
         "upload": """
-            Uploads a file from the local machine to a specified path inside a pod.
+            Uploads a file to a pod.
 
             **Usage:**
-                * `upload <local_path> <remote_path>` 
-                (Assumes a default/current pod context)
+                * `upload <local_path> <remote_path>`
                 * `upload <pod_name> <local_path> <remote_path>`
-
-            **Arguments:**
-                * **<pod_name>**: Optional. 
-                The name of the target pod.
-                * **<local_path>**: The path to the file on the local machine.
-                * **<remote_path>**: The path to the destination inside the pod.
         """,
         "download": """
-            Downloads a file from a specified path inside a pod to the local machine.
+            Downloads a file from a pod.
 
             **Usage:**
-                * `download <remote_path> <local_path>` 
-                (Assumes a default/current pod context)
+                * `download <remote_path> <local_path>`
                 * `download <pod_name> <remote_path> <local_path>`
-
-            **Arguments:**
-                * **<pod_name>**: Optional. The name of the source pod.
-                * **<remote_path>**: The path to the file inside the pod.
-                * **<local_path>**: The path to the destination on the local machine.
         """,
         "upload-pod2pod": """
-            Transfers a file between two different pods.
+            Directly transfers a file from one pod to another.
 
             **Usage:**
                 * `upload-pod2pod <source_pod> <destination_pod>`
-
-            **Arguments:**
-                * **<source_pod>**: The name of the pod to copy the file 
-                from (and likely the path within it).
-                * **<destination_pod>**: The name of the pod to copy the file 
-                to (and likely the path within it).
         """
     }
 
@@ -224,6 +194,7 @@ class Console:
         cfg = self.get_config()
         self.cfg = cfg
 
+        # Capture host
         if is_empty(cfg.get("host", "")):
             print("No host found")
 
@@ -244,8 +215,10 @@ class Console:
                 printerr("Setup aborted")
                 exit()
             except Exception as e:
+                print(247)
                 print(e)
 
+        # Capture credentials
         if is_empty(cfg.get("credentials", "")):
             print("No credentials found")
 
@@ -276,6 +249,9 @@ class Console:
 
         self.save_and_reload(cfg)
 
+    # -------------------------
+    # ACTIONS
+    # -------------------------
     def save_and_reload(self, data: dict):
         self.jsm.update_record(self.cfg, data)
         self.cfg = self.get_config()
@@ -310,7 +286,7 @@ class Console:
             
             return False
 
-    def _save_env(self, e: str):
+    def _save_env(self, e: str) -> True:
         if "dev" in e:
             env = f"{e} (DEVELOPMENT)"
         elif "preprod" in e or "test" in e:
@@ -324,10 +300,17 @@ class Console:
 
         return True
 
+    def _save_pod(self, p: str) -> True:
+        cfg = self.get_config()
+        cfg["pod"] = p
+        self.save_and_reload(cfg)
+
+        return True
+
     # -------------------------
     # SETTERS
     # -------------------------
-    def set_credentials(self, username: str, password: str):
+    def set_credentials(self, username: str, password: str) -> bool:
         if not is_empty(username):
             username = self.kt.encrypt(username.strip())
             username = b64encode(username).decode('utf-8')
@@ -348,7 +331,7 @@ class Console:
 
         return True
 
-    def set_username(self, username: str):
+    def set_username(self, username: str) -> bool:
         if not is_empty(username):
             username = self.kt.encrypt(username.strip())
             username = b64encode(username).decode('utf-8')
@@ -362,7 +345,7 @@ class Console:
 
         return True
 
-    def set_password(self, password: str):
+    def set_password(self, password: str) -> bool:
         if not is_empty(password):
             password = self.kt.encrypt(password.strip())
             password = b64encode(password).decode('utf-8')
@@ -376,7 +359,7 @@ class Console:
         
         return True
 
-    def set_host(self, host: str):
+    def set_host(self, host: str) -> bool:
         if not is_empty(host):
             host = self.kt.encrypt(host.strip())
             host = b64encode(host).decode('utf-8')
@@ -390,7 +373,7 @@ class Console:
         
         return True
 
-    def set_namespace(self, e: str):
+    def set_namespace(self, e: str) -> bool:
         if is_empty(e):
             printerr("No environment passed")
             return False
@@ -411,6 +394,53 @@ class Console:
             return False
         
         return True
+
+    def set_pod(self, p: str) -> Union[bool, str]:
+        found = False
+
+        if is_empty(p):
+            printerr("No pod name passed")
+            return False
+
+        if is_empty(self.oc.get_pods_list()):
+            printalr("No pods found, try logging in first")
+            return False
+
+        p = p.strip()
+        pods = self.oc.get_pods_list()
+        matches = []
+
+        for pod in pods:
+            # Matched at least one entry
+            if p in pod:
+                found = True
+                matches.append(pod)
+
+        if not found:
+            printerr("No pod found")
+            print("Use 'pods' to list the available pods")
+            return False
+
+        if len(matches) == 1:
+            p = matches[0]
+        if len(matches) > 1:
+            print(f"For name {p} were found {len(matches)} pods:")
+
+            for x in range(len(matches)):
+                print(f"{x+1}) {matches[x]}")
+
+            choice = input(f"Please choose a number between 1 and {len(matches)}: ")
+            choice = int(choice)
+
+            try:
+                p = matches[choice-1]
+            except IndexError:
+                printerr("There was an errore trying to select the chosen pod, please retry")
+                return False
+
+        self._save_pod(p)
+
+        return p
 
     # -------------------------
     # GETTERS
@@ -447,17 +477,17 @@ class Console:
                     for b in v:
                         bd = self.get_cleanvalue(b)
 
-                        if bd is None:
-                            print(printstr + bd)
+                        if bd is not None:
+                            print(printstr + str(bd))
                         else:
                             print(printstr + b)
                 else:
                     v = self.get_cleanvalue(v)
 
-                    if v is None:
+                    if v is not None:
                         v = config.get(a)
 
-                    print(printstr + v)
+                    print(printstr + str(v))
 
         # Specific values
         else:
@@ -553,7 +583,7 @@ class Console:
     def spawn_bash(self, pod_name: str = "default"):
         try:
             if pod_name == "default":
-                    pod_name = self.get_currpod()
+                pod_name = self.get_currpod()
 
             if is_empty(pod_name):
                 printalr("No pod specified, looking for the last accessed pod..")
@@ -565,11 +595,26 @@ class Console:
                 printerr("No pod found")
                 return
 
+            # Partial name
+            if not self.oc.is_pod(pod_name):
+                # Try to automatically find one match
+                pod_name = self.set_pod(pod_name)
+
+                if is_empty(pod_name):
+                    printerr("No pod found")
+                    return
+
             self.oc.start_session(pod_name)
-        except Exception:
+        except Exception as e:
+            print(e)
             printerr(f"An unexpected error occurred while accessing pod {pod_name}")
 
-    def do_upload(self, _from: str, _to: str, pod_name: str = "default"):
+    def do_upload(
+        self, 
+        _from: str, 
+        _to: str, 
+        pod_name: str = "default"
+    ):
         try:
             if pod_name == "default":
                 pod_name = self.get_currpod()
@@ -588,7 +633,12 @@ class Console:
             printsuc("Process completed\n\n")
             return True
 
-    def do_download(self, _from: str, _to: str, pod_name: str = "default"):
+    def do_download(
+        self, 
+        _from: str, 
+        _to: str, 
+        pod_name: str = "default"
+    ):
         try:
             if pod_name == "default":
                 pod_name = self.get_currpod()
@@ -656,8 +706,11 @@ class Console:
             printsuc("Process completed\n\n")
             return True
 
-    
+    # -------------------------
+    # VALIDATORS
+    # 
     # Arguments validation for download and upload
+    # -------------------------
     def verify_xload_args(
         self, 
         args: list, 

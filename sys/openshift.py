@@ -17,13 +17,16 @@ BASE = dirname(__file__)
 PARENT = f"{BASE}/.."
 POD_REGEX = r"([\w\/-]+)\s+"
 
-# load the Formatter class
+# Load the Formatter class
 fmttr = OCDepsManager.module_from_path(f"{PARENT}/formatter.py")
 Formatter = fmttr.Formatter
 
 class OpenShift:
     envs = None
 
+    # -------------------------
+    # VALIDATORS
+    # -------------------------
     @staticmethod
     def session_is_valid() -> bool:
         process = Popen(
@@ -37,16 +40,18 @@ class OpenShift:
         message = output.decode().splitlines()
         return not (not message) and "Error" not in message[0]
 
-    def _is_pod(self, pod_name: str = "") -> bool:
+    def is_pod(self, pod_name: str = "") -> bool:
         pods = self.get_pods_list()
 
         for pod in pods:
-            if pod_name in pod:
+            if pod_name == pod:
                 return True
 
         return False
 
-    # uses stern
+    # -------------------------
+    # GETTERS
+    # -------------------------
     def get_logs(
         self,
         pod_name: str = None,
@@ -59,8 +64,8 @@ class OpenShift:
         if not since:
             since = "30m"
 
-        # ensure pod_name is valid
-        if pod_name and self._is_pod(pod_name):
+        # Ensures pod_name is valid
+        if pod_name and self.is_pod(pod_name):
             cmd = ["stern", pod_name, "--since", since]
 
             if debug:
@@ -84,7 +89,7 @@ class OpenShift:
                 )
                 output = process.stdout
 
-                # filter with one or more keywords
+                # Filter with one or more keywords
                 if search is not None and (isinstance(search, str) or len(search) > 0):
                     for line in output:
                         line = line.decode('utf-8').strip()
@@ -93,12 +98,12 @@ class OpenShift:
                             if search in line:
                                 print(Formatter.format_log(line))
 
-                        # filter by multiple keywords
+                        # Filter by multiple keywords
                         elif isinstance(search, list):
                             if all(keyword in line for keyword in search):
                                 print(Formatter.format_log(line))
                 else:
-                    # output the logs directly if no search filter
+                    # Output the logs directly if no search filter
                     for line in process.stdout:
                         l = line.decode('utf-8').strip()
                         print(Formatter.format_log(l))
@@ -122,7 +127,7 @@ class OpenShift:
 
         lines = output.decode().splitlines()
         if len(lines) > 0:
-            # remove header
+            # Remove header
             lines.pop(0)
 
             for line in lines:
@@ -152,7 +157,7 @@ class OpenShift:
                 else:
                     tmp.append(line)
 
-            # remove first and last element
+            # Remove first and last element
             tmp.pop(0)
             tmp.pop()
 
@@ -166,7 +171,27 @@ class OpenShift:
             return tmp
         else:
             return []
+    
+    def get_status(self):
+        try:
+            process = Popen(
+                ["oc", "status"], 
+                stdin=PIPE, 
+                stderr=PIPE, 
+                stdout=PIPE,
+                shell=True
+            )
+            output, error = process.communicate()
 
+            for line in output.decode().splitlines():
+                print(line)
+        except Exception as e:
+            printerr("No host found, use 'set host {HOST}' first")
+            print(e)
+
+    # -------------------------
+    # SETTERS
+    # -------------------------
     def set_env(self, e: str):
         if is_empty(e):
             printerr("No environment passed")
@@ -174,6 +199,9 @@ class OpenShift:
 
         run(["oc", "project", e])
 
+    # -------------------------
+    # ACTIONS
+    # -------------------------
     def start_session(self, pod_name: str):
         if is_empty(pod_name):
             printerr("No pod passed")
@@ -202,6 +230,8 @@ class OpenShift:
                     if line.startswith("You have access to the following"):
                         print("You have access to the following namespaces and can switch between them with 'set namespace|env <namespace>':")
                         continue
+                    elif "Username:" in line or "Password:" in line:
+                        continue
 
                     print(line)
 
@@ -222,21 +252,4 @@ class OpenShift:
             exit()
         except Exception as e:
             printerr("An error occurred while logging out")
-            print(e)
-
-    def get_status(self):
-        try:
-            process = Popen(
-                ["oc", "status"], 
-                stdin=PIPE, 
-                stderr=PIPE, 
-                stdout=PIPE,
-                shell=True
-            )
-            output, error = process.communicate()
-
-            for line in output.decode().splitlines():
-                print(line.decode())
-        except Exception as e:
-            printerr("No host found, use 'set host {HOST}' first")
             print(e)

@@ -103,10 +103,12 @@ def try_install(module_name: str):
     command = reqs[module_name]["command"]
 
     print(f"Executing {command}...\n")
+    
     try:
         system(command)
     except Exception as e:
-        printerr(str(e))
+        printerr(f"Unable to install required package: {module_name}")
+        print(e)
         exit()
 
     print("Restart the console to see the changes")
@@ -123,9 +125,9 @@ def import_module_error(module_name: str):
     response = input("Would you like to install it now? (yes/no) ")
     response = response.strip().lower()
 
-    if response.startsWith("y"):
+    if response.startswith("y"):
         try_install(module_name)
-    elif response.startsWith("n"):
+    elif response.startswith("n"):
         print(f"See {url} for more details\n")
     exit()
 

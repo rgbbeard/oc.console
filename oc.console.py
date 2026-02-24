@@ -156,9 +156,11 @@ while True:
             # Show connection details
             if args[0] == "config":
                 console.show_config(args[1:])
-            # Show
-            elif args[0] == "data":
-                printinf("This feature is still under development")
+
+            # Show specific pod's details
+            # oc explain pod
+            elif args[0] == "pod":
+                print("This feature is still in development")
                 pass
 
         # -------------------------
@@ -210,12 +212,16 @@ while True:
         # CONNECTION STATUS
         # -------------------------
         elif cmd == "status":
+            """ TODO
+            
+            change user status method
+            """
             console.oc.get_status()
 
         # -------------------------
         # LIST ENVS
         # -------------------------
-        elif cmd == "envs" or cmd == "envs?":
+        elif cmd in ["envs", "envs?", "namespaces"]:
             console.get_envs()
 
         # -------------------------

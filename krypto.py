@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import base64
-from os.path import isfile
+from os.path import isfile, dirname
 from utilities import (
     printerr,
     printalr,
@@ -17,6 +17,8 @@ try:
 except ImportError:
     import_module_error("pycryptodome")
 
+BASE = dirname(__file__)
+
 
 class Krypto:
     _storage_file: str
@@ -27,7 +29,7 @@ class Krypto:
     _preloaded_conf: bool = False
 
     def __init__(self, storage_file="i.bin"):
-        self._storage_file = storage_file
+        self._storage_file = f"{BASE}/{storage_file}"
 
         if isfile(self._storage_file):
             printinf("Found encryption file")
@@ -42,7 +44,7 @@ class Krypto:
             # Generate a i.bin file to use for future ecryptions
             self.encrypt("")
 
-            printinf("File is: i.bin")
+            printinf(f"File is: {storage_file}")
 
     def _save(self):
         with open(self._storage_file, "wb") as f:
