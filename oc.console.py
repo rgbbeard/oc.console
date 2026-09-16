@@ -4,8 +4,11 @@ from typing import Union
 from os import system
 from os.path import dirname
 from re import search
+import random
 from shlex import split as parse_params
 from utilities import (
+    has,
+    is_scrambled,
     printerr,
     printalr,
     printinf,
@@ -17,8 +20,17 @@ from utilities import (
 )
 from echo import Echo
 from krypto import Krypto
+from exceptions import InvalidSyntaxError
 
 BASE = dirname(__file__)
+commands_queue = []
+
+
+def send_command(cmd: Union[str, list]):
+    global commands_queue
+
+    commands_queue.append(cmd) if isinstance(cmd, str) else commands_queue.extend(cmd)
+
 
 # Install required modules
 try:
@@ -53,12 +65,7 @@ globalcfg = console.get_config()
 # Automatically login if necessary
 if not console.oc.session_is_valid():
     printalr("User is not authenticated or previous session expired")
-
-    console.oc.do_login(
-        console.get_currhost(),
-        console.get_user(),
-        console.get_pasw(),
-    )
+    send_command("login via web")
 
 autocompletion = WordCompleter(console.call_manuel())
 history = FileHistory(f"{BASE}/.sesshstr")
@@ -83,18 +90,41 @@ def prompt(ppt):
 
 
 while True:
-    cmd = prompt(
-        Echo.ansi(
-            "<ansigreen>{%0%}</ansigreen> <ansiyellow>{%1%}</ansiyellow>",
-            "oc.console",
-            "$>"
+    cmd = ""
+    from_queue = False
+
+    if len(commands_queue) > 0:
+        cmd = commands_queue.pop(0)
+        from_queue = True
+    else:
+        env = console.get_currns()
+        envcolor = "ansigreen"
+
+        if "PRODUCTION" in env:
+            envcolor = "ansired"
+        elif "TEST" in env:
+            envcolor = "ansiyellow"
+
+        cmd = prompt(
+            Echo.ansi(
+                # Command string
+                "".join([
+                    "{%0%}",
+                    f" - <{envcolor}>{{%1%}}</{envcolor}>",
+                    "<ansiblue>{%2%}</ansiblue>"
+                ]),
+                # Replacements
+                "oc.console",
+                env,
+                "\n $> "
+            )
         )
-    )
+
     cmd = cmd.strip()
     argsvalid: bool = False
     args: list = []
 
-    if not (not cmd):
+    if cmd:
         try:
             args = parse_params(cmd)
         except ValueError as e:
@@ -107,6 +137,13 @@ while True:
         # The first element is always the command
         cmd = args.pop(0)
         argsvalid = len(args) >= 1
+
+        cmdstring = cmd + " ".join(args)
+
+        if from_queue:
+            printinf(f"Auto-executing command '{cmdstring}'")
+    else:
+        continue
 
     try:
         console.save_history(cmd, args, argsvalid)
@@ -124,7 +161,7 @@ while True:
         # -------------------------
         # CLEAR OUTPUT
         # -------------------------
-        elif cmd == "clear" or cmd == "cls":
+        elif is_scrambled(cmd, "clear") or cmd == "cls":
             system("clear")
 
         # -------------------------
@@ -138,11 +175,18 @@ while True:
                     printsuc("History successfully deleted")
                 else:
                     printerr("Unable to delete commands history")
+            elif args[0] == "note":
+                try:
+                    note = args[1]
+
+                    console.delete_note(note)
+                except IndexError:
+                    printerr("No name was provided")
 
         # -------------------------
         # RELOAD-CONFIG
         # -------------------------
-        elif cmd == "reload-config":
+        elif cmd in ["reload-config", "reload-conf", "reload-env", "reload"]:
             printinf("Reading the configuration file..")
 
             globalcfg = console.get_config()
@@ -161,7 +205,9 @@ while True:
             # oc explain pod
             elif args[0] == "pod":
                 print("This feature is still in development")
-                pass
+
+            elif args[0] == "notes":
+                console.show_notes()
 
         # -------------------------
         # SETTERS
@@ -169,7 +215,14 @@ while True:
         elif argsvalid and cmd == "set":
             # Required before login
             if args[0] == "host":
-                console.set_host(args[1])
+                try:
+                    # TODO: fix this                    
+                    index = int(args[1])
+                    console.set_host(index)
+                    send_command(["logout", "login via web"])
+                except IndexError:
+                    printerr("Please provide a host")
+                    continue
 
             # Required to login
             elif args[0] == "credentials":
@@ -191,31 +244,86 @@ while True:
 
             globalcfg = console.get_config()
 
+        elif argsvalid and cmd == "add":
+            if args[0] == "new":
+                if args[1] == "host":
+                    try:
+                        console.add_host(args[2])
+                    except IndexError:
+                        printalr(f"Command incomplete please read the documentation for {cmd}")
+                        continue
+
+                elif args[1] == "note":
+                    i = random.randint(0, 1000)
+
+                    try:
+                        if args[2]:
+                            i = args[2]
+                    except IndexError:
+                        pass
+
+                    console.spawn_nano(i)
+
         # -------------------------
         # LOGIN
         # -------------------------
         elif cmd == "login":
-            console.oc.do_login(
-                console.get_currhost(),
-                console.get_user(),
-                console.get_pasw(),
+            params = {
+                "token": None,
+                "host": console.get_currhost(),
+                "username": console.get_user(),
+                "password": console.get_pasw(),
+                "web": False
+            }
+
+            if argsvalid and args[0] == "with":
+                it = iter(args[1:])
+                for a in it:
+                    if a in params:
+                        tmp = next(it, params[a])
+
+                        if tmp in params:
+                            printerr(f"Missing value for '{a}'")
+                            continue
+
+                        params[a] = tmp
+                    else:
+                        printerr(f"Parameter not allowed: '{a}'")
+            elif argsvalid and args[0] == "via":
+                if args[1] == "web":
+                    params["web"] = True
+
+            status = console.oc.do_login(
+                params["host"],
+                params["username"],
+                params["password"],
+                params["token"],
+                params["web"]
             )
+
+            send_command(f"set namespace {console.oc.get_env()}")
+            send_command("reload")
+
             console.oc.get_envs()
+
+            if status != 0:
+                printerr("Login failed during automated sequence")
+
+                if from_queue:
+                    printinf("Purging queue")
+                    commands_queue.clear()
         
         # -------------------------
         # LOGOUT
         # -------------------------
         elif cmd == "logout" or cmd == "exit":
-            console.oc.do_logout()
+            console.oc.do_logout(cmd)
 
         # -------------------------
         # CONNECTION STATUS
         # -------------------------
-        elif cmd == "status":
-            """ TODO
-            
-            change user status method
-            """
+        elif is_scrambled(cmd, "status") or cmd == "status":
+            # TODO: change user status method
             console.oc.get_status()
 
         # -------------------------
@@ -252,7 +360,10 @@ while True:
         # -------------------------
         elif cmd == "enter":
             if argsvalid:
-                console.spawn_bash(args[0])
+                try:
+                    console.spawn_bash(args[0])
+                except KeyboardInterrupt:
+                    continue
             else:
                 printalr(f"Command incomplete, please read the documentation for {cmd}")
 
@@ -273,13 +384,13 @@ while True:
 
                 options = [
                     "--since", 
-                    "-t", 
+                    "-T", 
                     "--debug", 
                     "-D", 
                     "--save-logs", 
                     ">", 
                     "--search", 
-                    "-R"
+                    "-F"
                 ]
 
                 for i in range(1, len(args)):
@@ -294,7 +405,7 @@ while True:
                     if "=" in a:
                         o = a.split("=")[0]
 
-                    if "--since" == o or "-t" == o:
+                    if "--since" == o or "-T" == o:
                         try:
                             since = v
 
@@ -302,11 +413,11 @@ while True:
                                 since = args[i+1]
 
                             # Example: --since 1h24m10s
-                            matches = search(r"^(\d{1,2}[hms]{1}){1,3}$", since)
+                            matches = search(r"^(\d{1,2}[dhms]{1}){1,3}$", since)
                             if not matches:
                                 printerr("--since value not valid")
                                 continue
-                        except IndexError as ie:
+                        except IndexError:
                             printerr("--since value not found")
 
                     if "--debug" == o or "-D" == o:
@@ -322,7 +433,7 @@ while True:
                         if v not in options:
                             filename = str(v).strip()
                     
-                    if "--search" == o or "-R" == o:
+                    if "--search" == o or "-F" == o:
                         try:
                             r = range(i+1, len(args))
 
@@ -336,7 +447,7 @@ while True:
                                     v = args[i+1]
 
                                 search_ = v
-                        except IndexError as ie:
+                        except IndexError:
                             printerr("No filters passed to the --search parameter")
 
                 console.oc.get_logs(
@@ -378,24 +489,34 @@ while True:
         # -------------------------
         elif cmd == "download":
             if argsvalid:
+                exclude_list = []
+                flag = has(args, ["--except", "--exclude"])
+
+                if flag != False:
+                    i = args.index(flag)
+                    exclude_list = args[i+1:]
+                    args = args[0:i]
+
                 check = console.verify_xload_args(args, len(args), 2)
 
-                if len(args) == 2:
-                    if check:
-                        console.do_download(_from=args[0], _to=args[1])
-                    else:
-                        printerr(f"Invalid command syntax :: {_line()}")
-                elif len(args) == 3:
-                    if check:
+                if check:
+                    if len(args) == 2:
+                        console.do_download(
+                            _from=args[0], 
+                            _to=args[1], 
+                            exclude_list=exclude_list
+                        )
+                    elif len(args) == 3:
                         console.do_download(
                             pod_name=args[0],
                             _from=args[1],
-                            _to=args[2]
+                            _to=args[2],
+                            exclude_list=exclude_list
                         )
-                    else:
-                        printerr(f"Invalid command syntax :: {_line()}")
+                else:
+                    raise InvalidSyntaxError(f"Invalid command syntax :: {_line()}")
             else:
-                printerr(f"Command incomplete, please read the documentation for {cmd}")
+                raise InvalidSyntaxError(f"Command incomplete, please read the documentation for {cmd}")
 
         # -------------------------
         # UPLOAD-POD2POD
@@ -417,5 +538,8 @@ while True:
             if not (not cmd):
                 printerr(f"Command not recognized: {cmd}")
 
+    except InvalidSyntaxError as ise:
+        printalr(ise)
+
     except KeyboardInterrupt as ki:
-        console.oc.do_logout()
+        console.oc.do_logout("exit")

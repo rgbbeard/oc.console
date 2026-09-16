@@ -49,6 +49,15 @@ class OpenShift:
 
         return False
 
+    def is_partial_pod(self, pod_name: str = "") -> bool:
+        pods = self.get_pods_list()
+
+        for pod in pods:
+            if pod_name in pod:
+                return True
+
+        return False
+
     # -------------------------
     # GETTERS
     # -------------------------
@@ -61,11 +70,13 @@ class OpenShift:
         search: Union[str, list, None] = None,
         debug: bool = False
     ):
+        stream = ""
+
         if not since:
             since = "30m"
 
         # Ensures pod_name is valid
-        if pod_name and self.is_pod(pod_name):
+        if pod_name and self.is_partial_pod(pod_name):
             cmd = ["stern", pod_name, "--since", since]
 
             if debug:
@@ -78,7 +89,7 @@ class OpenShift:
                     f"filename: {filename}\n"
                     f"search: {[type(search), search]}\n"
                 )
-                pass
+                return
 
             try:
                 process = Popen(
@@ -101,15 +112,23 @@ class OpenShift:
                         # Filter by multiple keywords
                         elif isinstance(search, list):
                             if all(keyword in line for keyword in search):
-                                print(Formatter.format_log(line))
+                                f = Formatter.format_log(line)
+                                stream += f"\n{f}"
+                                print(f)
                 else:
-                    # Output the logs directly if no search filter
+                    # Output the logs directly if no search filter is applied
                     for line in process.stdout:
                         l = line.decode('utf-8').strip()
-                        print(Formatter.format_log(l))
+                        f = Formatter.format_log(l)
+                        stream += f"\n{f}"
+                        print(f)
             except CalledProcessError as e:
                 printerr(f"Error occurred: {e}")
             except KeyboardInterrupt:
+                if save_logs:
+                    with open(f"{PARENT}/output.log", "w") as handle:
+                        handle.write(stream)
+
                 print("\n\nOkay, bye!")
         else:
             print("Invalid pod name")
@@ -136,6 +155,21 @@ class OpenShift:
                     pods.append(pod.strip())
 
         return pods if len(pods) > 0 else []
+
+    def get_env(self) -> Union[str, None]:
+        process = Popen(
+            ["oc", "project"], 
+            stdin=PIPE, 
+            stderr=PIPE, 
+            stdout=PIPE
+        )
+        output, error = process.communicate()
+
+        tmp = output.decode()
+        m = search(r'(".*"\s)', tmp)
+
+        if m:
+            return m.group(0).replace('"', "").strip()
 
     def get_envs(self):
         process = Popen(
@@ -209,10 +243,25 @@ class OpenShift:
 
         run(["oc", "rsh", f"{pod_name}", "sh"])
 
-    def do_login(self, host: str, username: str, password: str):
+    def do_login(
+        self, 
+        host: str, 
+        username: str, 
+        password: str, 
+        token: Union[str, None] = None,
+        weblogin: bool = False
+    ) -> Union[None, int]:
+        process = None
+
         try:
             if not is_empty(host):
                 cmd = f'{{ echo "{username}"; echo "{password}"; }} | oc login {host} --insecure-skip-tls-verify'
+
+                if token is not None:
+                    cmd += f' --token={token}'
+
+                if weblogin:
+                    cmd += ' --web'
 
                 process = Popen(
                     cmd, 
@@ -244,12 +293,16 @@ class OpenShift:
         except Exception as e:
             printerr("An error occurred while logging in")
             print(e)
+            
+        return process.returncode if process else None
 
-    def do_logout(self):
+    def do_logout(self, cmd: Union[str, None] = "logout"):
         try:
             printinf("Logging out...")
             run(["oc", "logout"])
-            exit()
+            
+            if cmd == "exit":
+                exit()
         except Exception as e:
             printerr("An error occurred while logging out")
             print(e)

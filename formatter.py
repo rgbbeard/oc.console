@@ -11,11 +11,20 @@ class Formatter:
     @staticmethod
     def normalize_date(date:str):
         dt = None
-        try:
-            dt = datetime.strptime(date, "%Y-%m-%dT%H:%M:%S.%fZ")
-        except Exception as e:
-            dt = datetime.strptime(date, "%Y-%m-%dT%H:%M:%S.%f%z")
-        return dt.strftime("%d-%m-%Y %H:%M:%S")
+        
+        formats = [
+            "%Y-%m-%dT%H:%M:%S.%fZ",
+            "%Y-%m-%dT%H:%M:%S.%f%z"
+        ]
+        
+        for fmt in formats:
+            try:
+                dt = datetime.strptime(date, fmt)
+                
+                if dt is not None:
+                    return dt.strftime("%d-%m-%Y %H:%M:%S")
+            except Exception:
+                continue
 
     @staticmethod
     def format_log(log: str) -> str:
@@ -35,7 +44,7 @@ class Formatter:
 
             l = {}
 
-            time = Formatter.normalize_date(data["time"])
+            time = Formatter.normalize_date(data.get("time", "datetime"))
 
             l["time"] = time
             l["status-code"] = data.get("level", data.get("status", "unknown"))

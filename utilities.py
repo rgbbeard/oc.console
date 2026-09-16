@@ -17,6 +17,27 @@ def _line():
     return info[1]
 
 
+def is_scrambled(target: str, letters: Union[list, str]) -> bool:
+    if isinstance(letters, str):
+        letters = list(letters)
+
+    return all(l in target for l in letters)
+
+
+def has(haystack: list, needle: Union[list, str]) -> Union[bool, str]:
+    result = False
+
+    if isinstance(needle, list):
+        for i in needle:
+            if i in haystack:
+                result = i
+                break
+    else:
+        result = i if i in haystack else False
+
+    return result
+
+
 def get_path(from_filename: str, path_format: str = "unix"):
     curdir = ""
 
@@ -35,7 +56,19 @@ def get_path(from_filename: str, path_format: str = "unix"):
 
 
 def is_empty(val: Any) -> bool:
-    return val is None or val == "" or len(val) == 0
+    r = False
+
+    if val is None:
+        r = True
+    elif isinstance(val, str) and val == "":
+        r = True
+    elif isinstance(val, int):
+        if val < 0:
+            r = True
+    elif len(val) == 0:
+        r = True
+
+    return r 
 
 
 def sprintf(target: str, *replacements: Union[str, int, float]):

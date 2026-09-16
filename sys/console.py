@@ -1,9 +1,11 @@
 #!/usr/bin/python
 
+from pathlib import Path
 from typing import Union
 from subprocess import run
+import random
 from os.path import dirname, isfile, isdir, exists
-from os import symlink, unlink, makedirs
+from os import symlink, unlink, makedirs, listdir
 from re import search, sub
 from base64 import b64encode, b64decode
 from oc_deps_manager import OCDepsManager
@@ -27,6 +29,8 @@ POD_AND_FILE_REGEX = POD_REGEX + FILE_REGEX
 CFGFILE = f"{PARENT}/config.json"
 
 SESSION_HISTORY = f"{PARENT}/.sesshstr"
+
+NOTES_PATH = f"{PARENT}/notes/"
 
 # load the OpenShift class
 cmds = OCDepsManager.module_from_path(f"{BASE}/openshift.py")
@@ -68,60 +72,78 @@ class Console:
                 * `clear`
         """,
         "purge": """
-            Deletes stored data based on the argument provided.
+            Deletes stored data based on the target specified.
 
             **Usage:**
                 * `purge history`
+                * `purge note <note_name>`
 
             **Arguments:**
-                * **history**: Clears the command history file.
+                * **history**: Clears the session command history file.
+                * **note**: Deletes a specific note file from the notes directory.
         """,
         "reload-config": """
             Reloads the configuration file and refreshes global settings.
+            Aliases: **reload-conf**, **reload-env**, **reload**
 
             **Usage:**
                 * `reload-config`
         """,
         "show": """
-            Displays connection details or resource explanations.
+            Displays connection details, saved notes, or resource explanations.
 
             **Usage:**
-                * `show config`
-                * `show config <key>`
+                * `show config [all | key]`
+                * `show notes`
                 * `show pod` (In Development)
 
             **Arguments:**
-                * **config**: Shows the current configuration.
-                * **pod**: Explains pod details (currently a placeholder).
+                * **config**: Shows current configuration (decrypted).
+                * **notes**: Lists available local notes.
         """,
         "set": """
             Updates configuration parameters or the working environment.
 
             **Usage:**
-                * `set host <value>`
-                * `set credentials <user> <password>`
-                * **Aliases for credentials**: `username`, `password`
-                * `set namespace <value>` (Alias: **env**)
+                * `set host <index>`
+                * `set credentials <username> <password>`
+                * `set username <username>`
+                * `set password <password>`
+                * `set namespace <namespace>` (Alias: **env**)
 
             **Arguments:**
-                * **host**: The target server URL.
-                * **namespace**: The target environment/namespace.
+                * **host**: Index of the target server URL in the config host array.
+                * **namespace**: Target OpenShift project/namespace.
+        """,
+        "add": """
+            Adds new resources or opens a text editor for note taking.
+
+            **Usage:**
+                * `add new host <domain>`
+                * `add new note [note_name]`
+
+            **Arguments:**
+                * **host**: Adds a new encrypted host URL to configuration.
+                * **note**: Opens `nano` to create or edit a note file.
         """,
         "login": """
-            Authenticates the user using current host and credentials and fetches environments.
+            Authenticates against OpenShift using standard credentials, manual parameters, or web authentication.
 
             **Usage:**
                 * `login`
+                * `login via web`
+                * `login with [host <url>] [username <user>] [password <pass>] [token <tok>]`
         """,
         "logout": """
-            Invalidates the current session and logs the user out.
-            Aliases: **exit**
+            Invalidates the OpenShift session and logs out.
+            Alias: **exit** (logs out and exits console)
 
             **Usage:**
                 * `logout`
+                * `exit`
         """,
         "status": """
-            Checks the current connection and user authentication status.
+            Checks and prints OpenShift connection and cluster status.
 
             **Usage:**
                 * `status`
@@ -134,55 +156,55 @@ class Console:
                 * `envs`
         """,
         "ls": """
-            Lists all available pods in the current namespace.
+            Lists all available pods in the active namespace.
             Aliases: **pods**
 
             **Usage:**
                 * `ls`
         """,
         "find": """
-            Searches for a specific pod by name.
+            Searches for pods by partial name matching.
 
             **Usage:**
-                * `find <pod_name>`
+                * `find <partial_pod_name>`
         """,
         "enter": """
-            Starts an interactive bash session inside the requested pod.
+            Starts an interactive bash shell session inside the target pod.
 
             **Usage:**
                 * `enter <pod_name>`
         """,
         "logs": """
-            Streams logs from a pod. Uses 'stern' notation and supports JSON formatting.
+            Streams logs from a pod using 'stern' with json formatting and filtering support.
 
             **Usage:**
                 * `logs <pod_name> [options]`
 
             **Options:**
-                * `--since`, `-t`: Duration (e.g., 1h24m10s).
-                * `--search`, `-R`: Filter terms.
-                * `--save-logs`, `>`: Save output to a file.
-                * `--debug`, `-D`: Enable debug mode.
+                * `--since`, `-T`: Time window (e.g. 1h20m, 30m).
+                * `--search`, `-F`: Search keywords to filter log output.
+                * `--save-logs`, `>`: Saves stream output upon exit to output.log or custom file.
+                * `--debug`, `-D`: Output constructed command arguments without running.
         """,
         "upload": """
-            Uploads a file to a pod.
+            Uploads local files or directories to a pod using `oc cp`.
 
             **Usage:**
                 * `upload <local_path> <remote_path>`
                 * `upload <pod_name> <local_path> <remote_path>`
         """,
         "download": """
-            Downloads a file from a pod.
+            Downloads remote files or directories from a pod using `oc rsync`. Supports exclusion flags.
 
             **Usage:**
-                * `download <remote_path> <local_path>`
-                * `download <pod_name> <remote_path> <local_path>`
+                * `download <remote_path> <local_path> [--except | --exclude <item1> <item2>...]`
+                * `download <pod_name> <remote_path> <local_path> [--except | --exclude <item1> <item2>...]`
         """,
         "upload-pod2pod": """
-            Directly transfers a file from one pod to another.
+            Transfers a file directly between two pods using local intermediate staging.
 
             **Usage:**
-                * `upload-pod2pod <source_pod> <destination_pod>`
+                * `upload-pod2pod <source_pod>:<source_path> <dest_pod>:<dest_path>`
         """
     }
 
@@ -196,7 +218,7 @@ class Console:
 
         # Capture host
         if is_empty(cfg.get("host", "")):
-            print("No host found")
+            printalr("No host found")
 
             try:
                 done = False
@@ -286,7 +308,9 @@ class Console:
             
             return False
 
-    def _save_env(self, e: str) -> True:
+    def _save_env(self, e: Union[str, None]) -> True:
+        env = ""
+
         if "dev" in e:
             env = f"{e} (DEVELOPMENT)"
         elif "preprod" in e or "test" in e:
@@ -359,7 +383,26 @@ class Console:
         
         return True
 
-    def set_host(self, host: str) -> bool:
+    def set_host(self, index: Union[int, None]) -> bool:
+        cfg = self.get_config()
+        host = None
+
+        if not is_empty(index):
+            try:
+                host = cfg["hosts"][index]
+            except IndexError:
+                printerr("The selected host does not exist")
+                return False
+        else:
+            printerr("Please provide a host")
+            return False
+
+        cfg["host"] = host
+        self.save_and_reload(cfg)
+        
+        return True
+
+    def add_host(self, host: str) -> bool:
         if not is_empty(host):
             host = self.kt.encrypt(host.strip())
             host = b64encode(host).decode('utf-8')
@@ -368,7 +411,7 @@ class Console:
             return False
 
         cfg = self.get_config()
-        cfg["host"] = host
+        cfg["hosts"].append(host)
         self.save_and_reload(cfg)
         
         return True
@@ -400,11 +443,11 @@ class Console:
 
         if is_empty(p):
             printerr("No pod name passed")
-            return False
+            return p
 
         if is_empty(self.oc.get_pods_list()):
             printalr("No pods found, try logging in first")
-            return False
+            return p
 
         p = p.strip()
         pods = self.oc.get_pods_list()
@@ -419,7 +462,7 @@ class Console:
         if not found:
             printerr("No pod found")
             print("Use 'pods' to list the available pods")
-            return False
+            return p
 
         if len(matches) == 1:
             p = matches[0]
@@ -455,6 +498,24 @@ class Console:
                 value = self._manuel.get(key)
 
                 print(f"{key}: {value}\n")
+
+    def show_notes(self):
+        global NOTES_PATH
+
+        for item in listdir(NOTES_PATH):
+            if isfile(NOTES_PATH + item):
+                print(item)
+
+    def get_note(self, name: str):
+        file = NOTES_PATH + name
+
+        if not isfile(file):
+            print(f"The note {name} does not exist")
+            return
+
+        printinf(f"Opening note {file}")
+
+        run(["nano", file])
     
     def get_config(self):
         try:
@@ -493,7 +554,7 @@ class Console:
         else:
             for a in args[0:]:
                 if a in config:
-                    printinf("Showing configuration for {a}:")
+                    printinf(f"Showing configuration for {a}:")
 
                     v = config.get(a)
 
@@ -533,12 +594,7 @@ class Console:
         return self.get_config()["pod"]
 
     def get_currns(self) -> Union[str, None]:
-        ns = self.get_config()["namespace"]
-
-        if ns is not None:
-            printinf(f"Currently using namespace: {ns}")
-        else:
-            printint("No specific namespace used recently")
+        return self.get_config()["namespace"]
 
     def get_pods(self):
         pods = self.oc.get_pods_list()
@@ -580,6 +636,31 @@ class Console:
     # -------------------------
     # ACTIONS
     # -------------------------
+    def spawn_nano(self, name: Union[int, str]):
+        global NOTES_PATH
+
+        if isinstance(name, int):
+            name = f"note-{name}.txt"
+
+        file = NOTES_PATH + name
+
+        if isfile(file):
+            response = input(f"Another file named {name} exists, what would you like to do? (O=open; N=new name; A=abort) ")
+
+        if upper(response) == "A":
+            printinf("Got it.")
+            return
+
+        if upper(response) == "N":
+            new_filename = input("Type the new file name: ")
+
+            file = NOTES_PATH + new_filename
+            printinf(f"Creating note {file}")
+        else:
+            printinf(f"Opening note {file}")
+
+        run(["nano", file])
+
     def spawn_bash(self, pod_name: str = "default"):
         try:
             if pod_name == "default":
@@ -592,7 +673,7 @@ class Console:
 
 
             if is_empty(pod_name):
-                printerr("No pod found")
+                printerr("No pod found::647")
                 return
 
             # Partial name
@@ -601,13 +682,18 @@ class Console:
                 pod_name = self.set_pod(pod_name)
 
                 if is_empty(pod_name):
-                    printerr("No pod found")
+                    printerr("No pod found::656")
                     return
+
+            if not pod_name:
+                raise Exception("The requested pod was not found")
+
+            printinf(f"Entering pod: {pod_name}")
 
             self.oc.start_session(pod_name)
         except Exception as e:
-            print(e)
             printerr(f"An unexpected error occurred while accessing pod {pod_name}")
+            print(e)
 
     def do_upload(
         self, 
@@ -629,17 +715,24 @@ class Console:
         except Exception as e:
             printerr(str(e))
             return False
-        finally:
-            printsuc("Process completed\n\n")
-            return True
+        
+        printsuc("Process completed\n\n")
+        return True
 
     def do_download(
         self, 
         _from: str, 
         _to: str, 
-        pod_name: str = "default"
+        pod_name: str = "default",
+        exclude_list: Union[list, None] = None
     ):
         try:
+            cmd = ["oc", "rsync"]
+
+            if not is_empty(exclude_list):
+                for e in exclude_list:
+                    cmd.append(f"--exclude={e}")
+
             if pod_name == "default":
                 pod_name = self.get_currpod()
 
@@ -664,14 +757,17 @@ class Console:
                 printerr("The destination isn't a directory")
                 return False
 
+            cmd.append(f"{pod_name}:{_from}")
+            cmd.append(_to)
+
             printinf(f"Now downloading: {_from} to {_to}...\n")
-            run(["oc", "rsync", f"{pod_name}:{_from}", _to])
+            run(cmd)
         except Exception as e:
             printerr(e)
             return False
-        finally:
-            printsuc("Process completed\n\n")
-            return True
+        
+        printsuc("Process completed\n\n")
+        return True
 
     def do_pod2pod_transfer(self, _from: str, _to: str):
         printinf(f"Starting transfer from {_from} to {_to}")
@@ -702,9 +798,9 @@ class Console:
             printerr(f"File not found: {file1}.")
             print("Was it downloaded beforehand?")
             return False
-        finally:
-            printsuc("Process completed\n\n")
-            return True
+        
+        printsuc("Process completed\n\n")
+        return True
 
     # -------------------------
     # VALIDATORS

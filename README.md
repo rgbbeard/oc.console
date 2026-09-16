@@ -1,25 +1,17 @@
-
 ## Installation
+ 
+Download the OpenShift cli [here](https://docs.redhat.com/en/documentation/openshift_container_platform/4.8/html/installing/index)[cite: 1]
 
-Install openshift cli [here](https://docs.openshift.com/container-platform/4.8/cli_reference/openshift_cli/getting-started-cli.html)
-
-Install stern [here](https://github.com/stern/stern)
-
-Install oc.console
-
-```
-sudo chmod +x install.sh
-sudo ./install.sh
-```
+Download stern [here](https://github.com/stern/stern)[cite: 1]
 
 ## Commands list
-<blockquote style="color: #f00;"> 
-    Parameters inside unordered lists don't have a specific order
-</blockquote>
-<blockquote style="color: #f00;"> 
-    Parameters inside ordered lists must follow the given order
-</blockquote>
-<table style="font-size: 0.9em;">
+<blockquote style="color: #c00;"> 
+    <u>Parameters inside unordered lists don't have a specific order</u>
+</blockquote>[cite: 1]
+<blockquote style="color: #c00;"> 
+    <u>Parameters inside ordered lists must follow the given order</u>
+</blockquote>[cite: 1]
+<table style="font-size: 1rem;">
     <thead>
         <tr>
             <th>Command</th>
@@ -31,72 +23,156 @@ sudo ./install.sh
     <tbody>
         <tr>
             <td>
-                <code>help</code>
+                <code>help</code>, <code>manuel</code>, <code>manuel!</code>
             </td>
             <td>
                 <small>
                     <ul>
-                        <li>
-                            command (optional)
-                        </li>
+                        <li>command (optional)</li>
                     </ul>
                 </small>
             </td>
             <td>
-                <code>help {command}</code>
+                <code>help logs</code>
             </td>
             <td>
                 <p>
                     <small>
-                        Displays details about this program; Displays details and usage of a specified command
+                        Displays details about this program or usage of a specified command.
                     </small>
                 </p>
             </td>
         </tr>
         <tr>
             <td>
-                <code>manuel</code>
+                <code>clear</code>, <code>cls</code>
             </td>
             <td>
-                <small>
-                    <ul>
-                        <li>
-                            command (optional)
-                        </li>
-                    </ul>
-                </small>
+                <br/>
             </td>
             <td>
-                <code>manuel {command}</code>
+                <code>clear</code>
             </td>
             <td>
                 <p>
                     <small>
-                        Alias of help
+                        Clears the terminal screen.
                     </small>
                 </p>
             </td>
         </tr>
         <tr>
             <td>
-                <code>manuel!</code>
+                <code>purge</code>
             </td>
             <td>
                 <small>
-                    <ul>
-                        <li>
-                            command (optional)
-                        </li>
-                    </ul>
+                    <ol>
+                        <li>history | note</li>
+                        <li>note-name (required for note)</li>
+                    </ol>
                 </small>
             </td>
             <td>
-                <code>manuel! {command}</code>
+                <code>purge history</code><br/>
+                <code>purge note my_note.txt</code>
             </td>
             <td>
                 <p>
                     <small>
-                        Alias of help
+                        Deletes command history or removes a specific note file.
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>reload</code>, <code>reload-config</code>, <code>reload-conf</code>, <code>reload-env</code>
+            </td>
+            <td>
+                <br/>
+            </td>
+            <td>
+                <code>reload</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Reloads the configuration file and environment settings.
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>show</code>
+            </td>
+            <td>
+                <small>
+                    <ol>
+                        <li>config | notes</li>
+                        <li>sub-parameters (optional)</li>
+                    </ol>
+                </small>
+            </td>
+            <td>
+                <code>show config all</code><br/>
+                <code>show notes</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Displays connection configuration or lists saved notes.
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>set</code>
+            </td>
+            <td>
+                <small>
+                    <ol>
+                        <li>host | credentials | username | password | namespace | env</li>
+                        <li>value(s)</li>
+                    </ol>
+                </small>
+            </td>
+            <td>
+                <code>set host 0</code><br/>
+                <code>set credentials user pass</code><br/>
+                <code>set namespace my-project</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Updates configuration values. Setting host by index triggers auto-relogin.
+                    </small>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <code>add</code>
+            </td>
+            <td>
+                <small>
+                    <ol>
+                        <li>new</li>
+                        <li>host | note</li>
+                        <li>value / file-name (optional for note)</li>
+                    </ol>
+                </small>
+            </td>
+            <td>
+                <code>add new host domain.com</code><br/>
+                <code>add new note my_note.txt</code>
+            </td>
+            <td>
+                <p>
+                    <small>
+                        Adds a new host or creates/edits a note using <code>nano</code>.
                     </small>
                 </p>
             </td>
@@ -108,28 +184,26 @@ sudo ./install.sh
             <td>
                 <small>
                     <ul>
-                        <li>
-                            command (optional)
-                        </li>
+                        <li>via web</li>
+                        <li>with [host] [username] [password] [token]</li>
                     </ul>
                 </small>
             </td>
             <td>
-                <code>login</code>
+                <code>login via web</code><br/>
+                <code>login with host domain.com username admin</code>
             </td>
             <td>
                 <p>
                     <small>
-                        Log into OpenShift using your credentials.
-                        <br/>
-                        A <b>.host</b> file with the host address is required, use <code>set-host</code> to create it.
+                        Log into OpenShift using config credentials, key-value pairs, or web flow.
                     </small>
                 </p>
             </td>
         </tr>
         <tr>
             <td>
-                <code>logout</code>
+                <code>logout</code>, <code>exit</code>
             </td>
             <td>
                 <br/>
@@ -140,137 +214,61 @@ sudo ./install.sh
             <td>
                 <p>
                     <small>
-                        Logout from your account/end current session
+                        Logs out from OpenShift. <code>exit</code> terminates the shell session.
                     </small>
                 </p>
             </td>
         </tr>
         <tr>
             <td>
-                <code>set-credentials</code>
-            </td>
-            <td>
-                <small>
-                    <ul>
-                        <li>
-                            /path/to/credentials.txt
-                        </li>
-                    </ul>
-                </small>
-            </td>
-            <td>
-                <code>set-credentials credentials.txt</code>
-            </td>
-            <td>
-                <p>
-                    <small>
-                        Save your login credentials.
-                        <br/>
-                        This command requires the path to the file containing the login credentials.
-                        <br/>
-                        The file should contain only the username and password, each on a separate line
-                    </small>
-                </p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <code>set-credentials-path</code>
-            </td>
-            <td>
-                <small>
-                    <ul>
-                        <li>
-                            /path/to/credentials.txt
-                        </li>
-                    </ul>
-                </small>
-            </td>
-            <td>
-                <code>set-credentials-path credentials.txt</code>
-            </td>
-            <td>
-                <p>
-                    <small>
-                        Alias of set-credentials
-                    </small>
-                </p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <code>set-host</code>
-            </td>
-            <td>
-                <small>
-                    <ul>
-                        <li>
-                            host
-                        </li>
-                    </ul>
-                </small>
-            </td>
-            <td>
-                <code>set-host http(s)://domain.example</code>
-            </td>
-            <td>
-                <p>
-                    <small>
-                        Save the host to login to
-                    </small>
-                </p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <code>currhost</code>
+                <code>status</code>
             </td>
             <td>
                 <br/>
             </td>
             <td>
-                <code>currhost</code>
+                <code>status</code>
             </td>
             <td>
                 <p>
                     <small>
-                        Displays the host that's currently in use
+                        Displays current OpenShift connection and cluster status.
                     </small>
                 </p>
             </td>
         </tr>
         <tr>
             <td>
-                <code>host?</code>
+                <code>envs</code>, <code>envs?</code>, <code>namespaces</code>
             </td>
             <td>
                 <br/>
             </td>
             <td>
-                <code>host?</code>
+                <code>namespaces</code>
             </td>
             <td>
                 <p>
                     <small>
-                        Alias of currhost
+                        Lists all available namespaces/projects.
                     </small>
                 </p>
             </td>
         </tr>
         <tr>
             <td>
-                <code>host</code>
+                <code>ls</code>, <code>pods</code>
             </td>
             <td>
                 <br/>
             </td>
             <td>
-                <code>host</code>
+                <code>pods</code>
             </td>
             <td>
                 <p>
                     <small>
-                        Alias of currhost
+                        Lists all pods in the current namespace.
                     </small>
                 </p>
             </td>
@@ -282,101 +280,17 @@ sudo ./install.sh
             <td>
                 <small>
                     <ul>
-                        <li>
-                            {pod name} or {partial pod name}
-                        </li>
+                        <li>pod-name (partial)</li>
                     </ul>
                 </small>
             </td>
             <td>
-                <code>find pod-name</code>
-                <br/>
-                <br/>
-                <code>find partial-pod-name</code>
+                <code>find web-app</code>
             </td>
             <td>
                 <p>
                     <small>
-                        Find a pod
-                    </small>
-                </p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <code>ls</code>
-            </td>
-            <td>
-                <small>
-                    <ul>
-                        <li>
-                            {pod name} or {partial pod name}
-                        </li>
-                    </ul>
-                </small>
-            </td>
-            <td>
-                <code>find pod-name</code>
-                <br/>
-                <br/>
-                <code>find partial-pod-name</code>
-            </td>
-            <td>
-                <p>
-                    <small>
-                        Alias of find
-                    </small>
-                </p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <code>logs</code>
-            </td>
-            <td>
-                <small>
-                    <ol>
-                        <li>
-                            {pod name} or {partial pod name}
-                        </li>
-                        <li>
-                            --debug (optional)
-                        </li>
-                        <li>
-                            --save-logs (optional, <b>currently disabled</b>)
-                        </li>
-                        <li>
-                            --since (optional) hoursminutesseconds
-                            <br/>
-                            (default 30m)
-                        </li>
-                        <li>
-                            --search (optional) space separated filters
-                            <br/>
-                            (must be used at the end of all the options)
-                        </li>
-                    </ol>
-                </small>
-            </td>
-            <td>
-                <code>logs pod-name</code>
-                <br/>
-                <br/>
-                <code>logs partial-pod-name</code>
-                <br/>
-                <br/>
-                <code>logs pod-name --since 1h2m3s</code>
-                <br/>
-                <br/>
-                <code>logs pod-name --since 1h2m3s --search filters....</code>
-                <br/>
-                <br/>
-                <code>logs pod-name --search filters....</code>
-            </td>
-            <td>
-                <p>
-                    <small>
-                        Displays the logs for the requested pod
+                        Searches and displays matching pod names.
                     </small>
                 </p>
             </td>
@@ -388,119 +302,43 @@ sudo ./install.sh
             <td>
                 <small>
                     <ul>
-                        <li>
-                            pod-name
-                        </li>
+                        <li>pod-name (full or partial)</li>
                     </ul>
                 </small>
             </td>
             <td>
-                <code>enter pod-name</code>
+                <code>enter my-pod</code>
             </td>
             <td>
                 <p>
                     <small>
-                        Enters the pod's console.
-                        <br/>
-                        The accessed pod is saved inside the <b>.currpod</b> file
+                        Starts an interactive shell session inside the requested pod.
                     </small>
                 </p>
             </td>
         </tr>
         <tr>
             <td>
-                <code>envs</code>
-            </td>
-            <td>
-                <br/>
-            </td>
-            <td>
-                <code>envs</code>
-            </td>
-            <td>
-                <p>
-                    <small>
-                        List all the available projects (<b>oc projects</b> or <b>login</b>)
-                    </small>
-                </p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <code>use-env</code>
+                <code>logs</code>
             </td>
             <td>
                 <small>
-                    <ul>
-                        <li>
-                            project-name
-                        </li>
-                    </ul>
+                    <ol>
+                        <li>pod-name</li>
+                        <li>--since | -T {time}</li>
+                        <li>--debug | -D</li>
+                        <li>--save-logs | > [file]</li>
+                        <li>--search | -F {filter1} {filter2...}</li>
+                    </ol>
                 </small>
             </td>
             <td>
-                <code>use-env project-name</code>
+                <code>logs app --since 1h --search error fail</code>
             </td>
             <td>
                 <p>
                     <small>
-                        Switches to the requested project.
-                        <br/>
-                        If it has <b>dev</b> or <b>prod</b> at the end of its name, automatically determines the work environment
-                    </small>
-                </p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <code>currenv</code>
-            </td>
-            <td>
-                <br/>
-            </td>
-            <td>
-                <code>currenv</code>
-            </td>
-            <td>
-                <p>
-                    <small>
-                        Displays the current work environment
-                    </small>
-                </p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <code>env?</code>
-            </td>
-            <td>
-                <br/>
-            </td>
-            <td>
-                <code>env?</code>
-            </td>
-            <td>
-                <p>
-                    <small>
-                        Alias of currenv
-                    </small>
-                </p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <code>env</code>
-            </td>
-            <td>
-                <br/>
-            </td>
-            <td>
-                <code>env</code>
-            </td>
-            <td>
-                <p>
-                    <small>
-                        Alias of currenv
+                        Streams pod logs via stern. Supports time filtering, log saving, and multi-keyword filtering.
                     </small>
                 </p>
             </td>
@@ -511,39 +349,18 @@ sudo ./install.sh
             </td>
             <td>
                 <small>
-                    <h6>Method1</h6>
-                    <ol>
-                        <li>
-                            /path/to/source/file
-                        </li>
-                        <li>
-                            /path/to/destination/folder (<b>inside the pod</b>)
-                        </li>
-                    </ol>
-                    <br/>
-                    <h6>Method2</h6>
-                    <ol>
-                        <li>
-                            pod-name
-                        </li>
-                        <li>
-                            /path/to/source/file
-                        </li>
-                        <li>
-                            /path/to/destination/folder (<b>inside the pod</b>)
-                        </li>
-                    </ol>
+                    <p>Method 1: {src} {dest}</p>
+                    <p>Method 2: {pod} {src} {dest}</p>
                 </small>
             </td>
             <td>
-                <code>upload /path/to/source/file /path/to/destination/folder</code>
+                <code>upload file.txt /tmp/</code><br/>
+                <code>upload my-pod file.txt /tmp/</code>
             </td>
             <td>
                 <p>
                     <small>
-                        Uploads a file to the selected location inside a pod.
-                        <br/>
-                        If no pod is specified, it looks into the <b>.currpod</b> file for the last accessed pod (see <code>enter</code> command).
+                        Uploads a file to a pod. Defaults to last accessed pod if omitted.
                     </small>
                 </p>
             </td>
@@ -554,39 +371,18 @@ sudo ./install.sh
             </td>
             <td>
                 <small>
-                    <h6>Method1</h6>
-                    <ol>
-                        <li>
-                            /path/to/source/file (<b>inside the pod</b>)
-                        </li>
-                        <li>
-                            /path/to/destination/folder
-                        </li>
-                    </ol>
-                    <br/>
-                    <h6>Method2</h6>
-                    <ol>
-                        <li>
-                            pod-name
-                        </li>
-                        <li>
-                            /path/to/source/file (<b>inside the pod</b>)
-                        </li>
-                        <li>
-                            /path/to/destination/folder
-                        </li>
-                    </ol>
+                    <p>Method 1: {src} {dest} [--except/--exclude {paths}]</p>
+                    <p>Method 2: {pod} {src} {dest} [--except/--exclude {paths}]</p>
                 </small>
             </td>
             <td>
-                <code>download /path/to/source/file /path/to/destination/folder</code>
+                <code>download /var/logs . --except *.tmp</code><br/>
+                <code>download my-pod /var/logs . --exclude cache/</code>
             </td>
             <td>
                 <p>
                     <small>
-                        Downloads a file from the selected location inside a pod.
-                        <br/>
-                        If no pod is specified, it looks into the <b>.currpod</b> file for the last accessed pod (see <code>enter</code> command).
+                        Downloads files from a pod via <code>oc rsync</code> with exclusion patterns support.
                     </small>
                 </p>
             </td>
@@ -598,22 +394,18 @@ sudo ./install.sh
             <td>
                 <small>
                     <ol>
-                        <li>
-                            pod-name1:/path/to/source/file
-                        </li>
-                        <li>
-                            pod-name2:/path/to/destination/folder
-                        </li>
+                        <li>pod1:src</li>
+                        <li>pod2:dest</li>
                     </ol>
                 </small>
             </td>
             <td>
-                <code>upload-pod2pod pod-name1:/path/to/source/file pod-name2:/path/to/destination/folder</code>
+                <code>upload-pod2pod app1:/data.db app2:/tmp/</code>
             </td>
             <td>
                 <p>
                     <small>
-                        Copies a file from a pod to another
+                        Transfers files directly from one pod to another using local temp staging.
                     </small>
                 </p>
             </td>
